@@ -22,7 +22,7 @@ spec = Gem::Specification.new do |s|
   s.add_development_dependency("fakeweb", [">= 1.3.0"])
   s.add_development_dependency("factory_girl", [">= 0"])
 
-  s.add_dependency("active-support", [">= 2.3.0"])
+  s.add_dependency("activesupport", [">= 2.3.0"])
   s.add_dependency("bertrpc", [">= 1.3.0"])
 end
 

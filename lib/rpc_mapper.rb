@@ -1,3 +1,6 @@
+require 'bert'
+require 'bertrpc'
+
 module RPCMapper
   @@log_file = nil
 
