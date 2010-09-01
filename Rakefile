@@ -18,8 +18,12 @@ spec = Gem::Specification.new do |s|
   # s.executables    = ['rpc-mapper']
 
   s.add_development_dependency("shoulda", [">= 2.10.0"])
+  s.add_development_dependency("leftright", [">= 0.0.6"])
+  s.add_development_dependency("fakeweb", [">= 1.3.0"])
+  s.add_development_dependency("factory_girl", [">= 0"])
 
-  # s.add_dependency("gem-name", [">= 0"])
+  s.add_dependency("active-support", [">= 2.3.0"])
+  s.add_dependency("bertrpc", [">= 1.3.0"])
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|

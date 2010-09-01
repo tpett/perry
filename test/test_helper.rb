@@ -1,6 +1,9 @@
 require 'rubygems'
 require 'test/unit'
 require 'shoulda'
+require 'factory_girl'
+require 'leftright'
+require 'fakeweb'
 
 # Add test and lib paths to the $LOAD_PATH
 [ File.dirname(__FILE__),
@@ -12,4 +15,9 @@ end
 
 require 'rpc_mapper'
 
-# TODO: setup your test environment here
+# TRP: Test models
+require 'test/fixtures/models'
+require 'test/fixtures/test_adapter'
+
+# Pull in factories
+require 'test/factories'
