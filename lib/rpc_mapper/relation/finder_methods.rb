@@ -3,9 +3,11 @@ module RPCMapper::FinderMethods
   def find(ids_or_mode, options={})
     case ids_or_mode
     when Fixnum, String
-      self.where(:id => ids_or_mode.to_i).first(options)
+      self.where(:id => ids_or_mode.to_i).first(options) || raise(RPCMapper::RecordNotFound, "Could not find record with :id = #{ids_or_mode}")
     when Array
-      self.where(:id => ids_or_mode).all(options)
+      self.where(:id => ids_or_mode).all(options).tap do |result|
+        raise RPCMapper::RecordNotFound, "Couldn't find all records with ids (#{ids_or_mode.join(',')}) (expected #{ids_or_mode.size} records but got #{result.size})." unless result.size == ids_or_mode.size
+      end
     when :all
       self.all(options)
     when :first

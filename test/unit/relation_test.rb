@@ -15,6 +15,10 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
       @adapter = @model.send(:adapter)
     end
 
+    teardown do
+      @adapter.reset
+    end
+
     context "merge method" do
       should "push multi-fields onto that value's array" do
         relation = @relation.dup
@@ -152,12 +156,14 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
       end
 
       should "return an object or nil if nothing matched" do
+        @adapter.data = { :id => 1 }
         assert_kind_of RPCMapper::Base, @relation.first
       end
     end
 
     context "find method" do
       should "accept string or number as query for the primary_key with finder options" do
+        @adapter.data = { :id => 1 }
         @relation.find(1)
         assert_equal [{:id => 1}], @adapter.last_call.last[:where]
         @relation.find("1")
@@ -165,6 +171,8 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
       end
 
       should "accept array of primary keys with finder options" do
+        @adapter.data = { :id => 1 }
+        @adapter.count = 4
         @relation.find([1,2,3,4])
         assert_equal [{:id => [1,2,3,4]}], @adapter.last_call.last[:where]
       end
@@ -175,6 +183,7 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
       end
 
       should "accept :first with finder options" do
+        @adapter.data = { :id => 1 }
         assert_kind_of RPCMapper::Base, @relation.find(:first, :conditions => 'test')
         assert_equal ['test'], @adapter.last_call.last[:where]
       end
@@ -182,6 +191,14 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
       should "raise ArgumentError for wrong usage" do
         assert_raises(ArgumentError) { @relation.find(1.5) }
         assert_raises(ArgumentError) { @relation.find({}) }
+      end
+
+      should "raise RPCMapper::RecordNotFound when id passed and record could not be found" do
+        assert_raises(RPCMapper::RecordNotFound) { @relation.find(1) }
+      end
+
+      should "raise RPCMapper::RecordNotFound when a set of ids is passed and any record could not be found" do
+        assert_raises(RPCMapper::RecordNotFound) { @relation.find([1,2,3]) }
       end
     end
 

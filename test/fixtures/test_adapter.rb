@@ -2,16 +2,15 @@ module RPCMapper::Test
   class TestAdapter < RPCMapper::Adapters::AbstractAdapter
     register_as :test
 
-    attr_accessor :calls, :data
+    attr_accessor :calls, :data, :count
 
     def call(procedure, options={})
       self.calls << [procedure, options]
       log(options, "TEST #{procedure}")
 
       # TRP: Build up the fake data
-      count = options[:limit] || 1
       result = []
-      count.times { result << data }
+      (@count || options[:limit] || 1).times { result << data }
       result
     end
 
@@ -23,13 +22,10 @@ module RPCMapper::Test
       @calls ||= []
     end
 
-    def data
-      @data ||= {}
-    end
-
     def reset
       @calls = []
-      @data = {}
+      @data = nil
+      @count = nil
     end
 
   end

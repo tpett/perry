@@ -485,6 +485,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       end
 
       should "return a single object" do
+        @adapter.data = { :id => 1 }
         assert_kind_of RPCMapper::Base, @site.maintainer
       end
     end
@@ -502,6 +503,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       end
 
       should "return a single object" do
+        @adapter.data = { :id => 1 }
         assert_kind_of RPCMapper::Base, @article.author
       end
     end

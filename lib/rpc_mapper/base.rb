@@ -17,6 +17,7 @@ require 'benchmark'
 require 'rpc_mapper/core_ext/kernel/singleton_class'
 
 # TRP: RPCMapper modules
+require 'rpc_mapper/errors'
 require 'rpc_mapper/config_options'
 require 'rpc_mapper/associations/contains'
 require 'rpc_mapper/associations/external'
