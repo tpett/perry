@@ -1,14 +1,14 @@
 # TRP: Cherry pick some goodies from active_support
 require 'active_support/core_ext/array'
-begin
-  require 'active_support/core_ext/duplicable' #ActiveSupport 2.3.5
-rescue LoadError => exception
-  require 'active_support/core_ext/object/duplicable' #ActiveSupport 3.0.0.RC
-end
 require 'active_support/core_ext/class/inheritable_attributes'
 require 'active_support/core_ext/hash/deep_merge'
+begin
+  require 'active_support/core_ext/duplicable' #ActiveSupport 2.3.x
+  Hash.send(:include, ActiveSupport::CoreExtensions::Hash::DeepMerge) unless Hash.instance_methods.include?('deep_merge')
+rescue LoadError => exception
+  require 'active_support/core_ext/object/duplicable' #ActiveSupport 3.0.x
+end
 require 'active_support/core_ext/module/delegation'
-Hash.send(:include, ActiveSupport::CoreExtensions::Hash::DeepMerge) unless Hash.new.respond_to?(:deep_merge)
 
 # TRP: Used for pretty logging
 require 'benchmark'

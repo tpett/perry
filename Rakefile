@@ -30,10 +30,19 @@ Rake::GemPackageTask.new(spec) do |pkg|
   pkg.gem_spec = spec
 end
 
-Rake::TestTask.new do |t|
-  t.libs << 'test'
-  t.test_files = FileList["test/**/*_test.rb"]
-  t.verbose = true
+[:rails2, :rails3].each do |name|
+
+  Rake::TestTask.new("test_#{name}") do |t|
+    t.libs << 'test'
+    t.ruby_opts << "-r load_#{name}"
+    t.test_files = FileList["test/**/*_test.rb"]
+    t.verbose = true
+  end
+
+end
+
+desc "Test all gem versions"
+task :test => [:test_rails2, :test_rails3] do
 end
 
 begin
