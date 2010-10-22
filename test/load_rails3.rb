@@ -1,5 +1,4 @@
 require 'rubygems'
-gem 'rails', '~>3.0'
-require 'active_support'
+gem 'activesupport', '~>3.0'
 
 puts "Using ActiveSupport 3.0.x"
