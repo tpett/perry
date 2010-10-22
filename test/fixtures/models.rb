@@ -29,16 +29,28 @@ module RPCMapper::Test
       attributes :id, :name
       configure_mutable
       has_one :maintainer, :class_name => "RPCMapper::Test::Blog::Person"
+      has_one :master_comment, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment"
+      has_one :fun_articles, lambda { |site|
+        {
+          :class_name => "RPCMapper::Test::Blog::Article",
+          :conditions => "1",
+          :sql => %{
+            SELECT articles.*
+            FROM articles
+            WHERE articles.text LIKE %monkeyonabobsled% AND articles.site_id = #{site.id}
+          }
+        }
+      }
       has_many :articles, :class_name => "RPCMapper::Test::Blog::Article"
       has_many :comments, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment"
-      has_many :awesome_comments, lambda { |blog|
+      has_many :awesome_comments, lambda { |site|
         {
                :class_name => "RPCMapper::Test::Blog::Comment",
                :conditions => "1",
                :sql => %{
                   SELECT comments.*
                   FROM comments
-                  WHERE comments.text LIKE '%awesome%' AND parent_type = "Blog" AND parent_id = #{blog.id}
+                  WHERE comments.text LIKE '%awesome%' AND parent_type = "Site" AND parent_id = #{site.id}
                }
         }
       }

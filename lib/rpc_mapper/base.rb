@@ -85,7 +85,7 @@ class RPCMapper::Base
   class << self
     public
 
-    delegate :find, :first, :all, :search, :to => :scoped
+    delegate :find, :first, :all, :search, :apply_finder_options, :to => :scoped
     delegate :select, :group, :order, :joins, :where, :having, :limit, :offset, :from, :to => :scoped
 
     def new_from_data_store(hash)

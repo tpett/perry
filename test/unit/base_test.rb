@@ -434,16 +434,6 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
         @adapter.reset
       end
 
-      should "add proper :where conditions for remote model" do
-        @site.articles
-        assert_equal [{ :site_id => 1 }], @adapter.last_call.last[:where]
-      end
-
-      should "set :parent_type, and :parent_id params if :as config used in association declaration" do
-        @site.comments
-        assert_equal [{ :parent_id => 1, :parent_type => "Site" }], @adapter.last_call.last[:where]
-      end
-
       should "not query if primary key is nil" do
         @site.id = nil
         assert_nil @site.id
@@ -457,12 +447,6 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
         @comment.author
         assert_equal [{ :id => 2 }], @adapter.last_call.last[:where]
       end
-
-      should "use only :sql option for query if it is passed" do
-        @site.awesome_comments
-        assert_nil @adapter.last_call.last[:where]
-        assert_match /awesome/, @adapter.last_call.last[:sql]
-      end
     end
 
     context 'has_many external associations' do
@@ -472,8 +456,23 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
         @adapter.reset
       end
 
-      should "return array for has_many" do
-        assert_kind_of Array, @site.comments
+      should "return a relation" do
+        assert_equal RPCMapper::Relation, @site.articles.class
+      end
+
+      should "add proper :where conditions for remote model" do
+        assert_equal [{ :site_id => 1 }], @site.articles.where_values
+      end
+
+      should "set :parent_type, and :parent_id params if :as config used in association declaration" do
+        assert_equal [{ :parent_id => 1, :parent_type => "Site" }], @site.comments.where_values
+      end
+
+      should "use only :sql option for query if it is passed" do
+        relation = @site.awesome_comments
+        relation.all
+        assert_nil @adapter.last_call.last[:where]
+        assert_match /awesome/, relation.raw_sql_value
       end
     end
 
@@ -488,6 +487,24 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
         @adapter.data = { :id => 1 }
         assert_kind_of RPCMapper::Base, @site.maintainer
       end
+
+      should "add proper :where conditions for remote model" do
+        @site.maintainer
+        assert_equal [{ :site_id => 1 }], @adapter.last_call.last[:where]
+      end
+
+      should "set :parent_type, and :parent_id params if :as config used in association declaration" do
+        @site.master_comment
+        assert_equal [{ :parent_id => 1, :parent_type => "Site" }], @adapter.last_call.last[:where]
+      end
+
+      should "use only :sql option for query if it is passed" do
+        @site.fun_articles
+        assert_nil @adapter.last_call.last[:where]
+        assert_match /monkeyonabobsled/, @adapter.last_call.last[:sql]
+      end
+
+
     end
 
     context "belongs_to external association" do

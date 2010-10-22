@@ -40,7 +40,7 @@ module RPCMapper::Associations
             when :belongs, :one
               klass.first(query_options) if query_options[:conditions] # TRP: Only run query if conditions is not nil
             when :many
-              klass.all(query_options)   if query_options[:conditions] # TRP: Only run query if conditions is not nil
+              klass.apply_finder_options(query_options)   if query_options[:conditions] # TRP: Only apply scopes if conditions is not nil
             end
             instance_variable_set(cache_ivar, cached_value)
           end
