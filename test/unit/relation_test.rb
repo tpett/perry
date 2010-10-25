@@ -12,7 +12,7 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
         scope :foo, where('foo')
         scope :bar, where('bar')
       end
-      @adapter = @model.send(:adapter)
+      @adapter = @model.send(:read_adapter)
     end
 
     teardown do

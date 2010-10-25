@@ -15,7 +15,7 @@ module RPCMapper::Serialization
         alias_method "#{field}_raw", field
         alias_method field, "deserialize_#{field}"
 
-        set_serialize_writers(field) if self.mutable
+        set_serialize_writers(field) if self.write_adapter
 
       end
     end

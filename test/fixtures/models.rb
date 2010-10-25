@@ -1,12 +1,11 @@
 module RPCMapper::Test
   class Base < RPCMapper::Base
-    configure :adapter_type => :test
+    read_with :test
   end
 
   module Wearhouse
     class Widget < RPCMapper::Test::Base
       attributes :string, :integer, :float, :text
-      configure :adapter_type => :test
       contains_many :subwidgets, :class_name => "RPCMapper::Test::Wearhouse::Subwidget"
       contains_one :schematic, :class_name => "RPCMapper::Test::Wearhouse::Schematic"
     end
@@ -27,7 +26,7 @@ module RPCMapper::Test
   module Blog
     class Site < RPCMapper::Test::Base
       attributes :id, :name
-      configure_mutable
+      write_with :test
       has_one :maintainer, :class_name => "RPCMapper::Test::Blog::Person"
       has_one :master_comment, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment"
       has_one :fun_articles, lambda { |site|

@@ -16,8 +16,8 @@ end
 require 'rpc_mapper'
 
 # TRP: Test models
-require 'test/fixtures/models'
 require 'test/fixtures/test_adapter'
+require 'test/fixtures/models'
 
 # Pull in factories
 require 'test/factories'

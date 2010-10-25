@@ -5,7 +5,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
   context "BertMapper::Base class" do
     setup do
       @model = Class.new(RPCMapper::Test::Base)
-      @adapter = @model.send(:adapter)
+      @adapter = @model.send(:read_adapter)
       # TRP: Block all Net::HTTP requests
       FakeWeb.allow_net_connect = false
     end
@@ -20,34 +20,41 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
     context "config_options" do
       setup do
         @model.class_eval do
-          configure :service => 'models', :service_namespace => lambda { @foo }
+          configure_read do |config|
+            config.service = "models"
+            config.namespace = @foo
+          end
         end
       end
 
       should "set value if passed" do
-        assert_equal "models", @model.send(:service)
+        assert_equal "models", @model.read_adapter.config[:service]
       end
 
       should "set value to passed proc (when a proc) and delay execution to next read of that variable" do
         @model.send(:instance_variable_set, :@foo, "bar")
-        assert_equal "bar", @model.send(:service_namespace)
+        assert_equal "bar", @model.read_adapter.config[:namespace]
       end
     end
 
-    context "configure_mutable method" do
+    context "persistence methods" do
       setup do
         @model.class_eval do
           attributes :a, :b, :c
-          configure_mutable :post_body_wrapper => "model"
+          write_with :test
+
+          configure_write do |config|
+            config.post_body_wrapper = "test"
+          end
         end
       end
 
-      should "require bert_mapper/mutable if needed" do
-        assert defined?(RPCMapper::Mutable)
+      should "require bert_mapper/persistence if needed" do
+        assert defined?(RPCMapper::Persistence)
       end
 
       should "include RPCMapper::Mutable module" do
-        assert @model.ancestors.include?(RPCMapper::Mutable)
+        assert @model.ancestors.include?(RPCMapper::Persistence)
       end
 
       should "define writers for attributes that have been declared" do
@@ -57,8 +64,8 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
         assert instance.respond_to?(:c=)
       end
 
-      should "set post_body_wrapper inheritable attribute" do
-        assert_equal 'model', @model.send(:mutable_post_body_wrapper)
+      should "set config options to adapter config" do
+        assert @model.write_adapter.config.keys.include?(:post_body_wrapper)
       end
     end
 
@@ -264,7 +271,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       should "create writers if class has been declared mutable" do
         @model.class_eval do
           attributes :a
-          configure_mutable
+          write_with :test
           attribute :b
         end
         instance = @model.new
@@ -281,7 +288,6 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       setup do
         @model.send :attributes, :id, :name, :expire_at
         @model.send :configure_cacheable, :record_count_threshold => 3, :expires => :expire_at
-        @model.send :configure, :adapter_type => :test
         @adapter.data = { :id => 1, :name => "Foo", :expire_at => Time.now + 60 }
       end
 
@@ -314,13 +320,19 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
 
 
     #-----------------------------------------
-    # TRP: Mutable
+    # TRP: Persistence
     #-----------------------------------------
-    context "mutable functions" do
+    context "persistence methods" do
       setup do
-        @model.send :attributes, :id, :a, :b, :c
-        @model.send :configure, :mutable_host => "http://test.local"
-        @model.send :configure_mutable, :service => "foo", :post_body_wrapper => "foo"
+        @model.class_eval do
+          attributes :id, :a, :b, :c
+          write_with :restful_http
+          configure_write do |config|
+            config.host = 'http://test.local'
+            config.service = 'foo'
+            config.post_body_wrapper = 'foo'
+          end
+        end
       end
 
       teardown do
@@ -328,7 +340,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       end
 
       should "do a PUT when saving an existing record" do
-        FakeWeb.register_uri(:put, 'http://test.local/foo/1.json', :body => "OK")
+        FakeWeb.register_uri(:put, 'http://test.local/foo/1', :body => "OK")
         instance = @model.new_from_data_store(:id => 1, :a => 'a', :b => 'b', :c => 'c')
         instance.a = 'change'
         assert instance.save
@@ -337,7 +349,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       end
 
       should "do a POST when saving a new record" do
-        FakeWeb.register_uri(:post, 'http://test.local/foo.json', :body => "OK")
+        FakeWeb.register_uri(:post, 'http://test.local/foo', :body => "OK")
         instance = @model.new(:id => 2, :a => 'a', :b => 'b', :c => 'c')
         assert instance.save
         assert FakeWeb.last_request && FakeWeb.last_request.body_exist?
@@ -345,26 +357,11 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       end
 
       should "do a DELETE when deleting an existing record" do
-        FakeWeb.register_uri(:delete, 'http://test.local/foo/1.json', :body => "OK")
+        FakeWeb.register_uri(:delete, 'http://test.local/foo/1', :body => "OK")
         instance = @model.new_from_data_store(:id => 1, :a => 'a', :b => 'b', :c => 'c')
         assert instance.delete
         assert FakeWeb.last_request
         assert_kind_of Net::HTTP::Delete, FakeWeb.last_request
-      end
-
-      context "mutable_params method" do
-        should "be defined on mutable object instance" do
-          assert @model.new.respond_to?(:mutable_params)
-          assert @model.new.respond_to?(:mutable_params=)
-        end
-
-        should "merge into the params sent in POST body to server" do
-          FakeWeb.register_uri(:post, 'http://test.local/foo', :body => "OK")
-          instance = @model.new
-          instance.mutable_params = { :random_string => "095a8224f3d679f8fd3787747a55c450"}
-          instance.save
-          assert_match /#{instance.mutable_params[:random_string]}/, FakeWeb.last_request.body
-        end
       end
 
     end
@@ -378,7 +375,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
         @hash = { :foo => :bar, :baz => [1,2,3] }
         @model.send :attributes, :hash
         @model.send :serialize, :hash
-        @model.send :configure_mutable
+        @model.send :write_with, :test
       end
 
       should "deserialize from a YAML serialized object" do

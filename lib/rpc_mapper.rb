@@ -1,5 +1,22 @@
-require 'bert'
-require 'bertrpc'
+# TRP: Cherry pick some goodies from active_support
+require 'active_support/core_ext/array'
+require 'active_support/core_ext/class/inheritable_attributes'
+require 'active_support/core_ext/hash/deep_merge'
+begin
+  require 'active_support/core_ext/duplicable' #ActiveSupport 2.3.x
+  Hash.send(:include, ActiveSupport::CoreExtensions::Hash::DeepMerge) unless Hash.instance_methods.include?('deep_merge')
+rescue LoadError => exception
+  require 'active_support/core_ext/object/duplicable' #ActiveSupport 3.0.x
+end
+require 'active_support/core_ext/module/delegation'
+
+# TRP: Used for pretty logging
+autoload :Benchmark, 'benchmark'
+
+require 'ostruct'
+
+# TRP: RPCMapper core_ext
+require 'rpc_mapper/core_ext/kernel/singleton_class'
 
 module RPCMapper
   @@log_file = nil

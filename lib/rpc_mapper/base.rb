@@ -1,24 +1,5 @@
-# TRP: Cherry pick some goodies from active_support
-require 'active_support/core_ext/array'
-require 'active_support/core_ext/class/inheritable_attributes'
-require 'active_support/core_ext/hash/deep_merge'
-begin
-  require 'active_support/core_ext/duplicable' #ActiveSupport 2.3.x
-  Hash.send(:include, ActiveSupport::CoreExtensions::Hash::DeepMerge) unless Hash.instance_methods.include?('deep_merge')
-rescue LoadError => exception
-  require 'active_support/core_ext/object/duplicable' #ActiveSupport 3.0.x
-end
-require 'active_support/core_ext/module/delegation'
-
-# TRP: Used for pretty logging
-require 'benchmark'
-
-# TRP: RPCMapper core_ext
-require 'rpc_mapper/core_ext/kernel/singleton_class'
-
 # TRP: RPCMapper modules
 require 'rpc_mapper/errors'
-require 'rpc_mapper/config_options'
 require 'rpc_mapper/associations/contains'
 require 'rpc_mapper/associations/external'
 require 'rpc_mapper/cacheable'
@@ -29,7 +10,6 @@ require 'rpc_mapper/adapters'
 
 
 class RPCMapper::Base
-  include RPCMapper::ConfigOptions
   include RPCMapper::Associations::Contains
   include RPCMapper::Associations::External
   include RPCMapper::Serialization
@@ -38,23 +18,11 @@ class RPCMapper::Base
   attr_accessor :attributes, :new_record
   alias :new_record? :new_record
 
-  class_inheritable_accessor :defined_attributes, :mutable, :cacheable, :scoped_methods, :declared_associations
-  config_options :rpc_server_host => 'localhost',
-                 :rpc_server_port => 8000,
-                 :service => nil,
-                 :service_namespace => nil,
-                 :adapter_type => nil,
-                 # TRP: Only used if configure_mutable is called
-                 :mutable_default_parameters => {},
-                 :mutable_host => nil,
-                 # TRP: This is used to append any options to the call (e.g. value to authenticate the client with the server, :app_key)
-                 :default_options => {}
+  class_inheritable_accessor :read_adapter, :write_adapter, :cacheable, :defined_attributes, :scoped_methods, :declared_associations
 
-  self.mutable = false
   self.cacheable = false
   self.declared_associations = {}
   self.defined_attributes = []
-  @@adapter_pool = {}
 
   def initialize(attributes={})
     self.new_record = true
@@ -67,18 +35,18 @@ class RPCMapper::Base
 
   protected
 
-  # TRP: Common interface for setting attributes to keep things consistent
-  def set_attributes(attributes)
+  # TRP: Common interface for setting attributes to keep things consistent; if force is true the defined_attributes list will be ignored
+  def set_attributes(attributes, force=false)
     attributes = attributes.inject({}) do |options, (key, value)|
       options[key.to_s] = value
       options
     end
     @attributes = {} if @attributes.nil?
-    @attributes.merge!(attributes.reject { |field, value| !self.defined_attributes.include?(field) })
+    @attributes.merge!(attributes.reject { |field, value| !self.defined_attributes.include?(field) && !force })
   end
 
-  def set_attribute(attribute, value)
-    set_attributes({ attribute => value })
+  def set_attribute(attribute, value, force=false)
+    set_attributes({ attribute => value }, force)
   end
 
   # Class Methods
@@ -121,11 +89,35 @@ class RPCMapper::Base
     protected
 
     def fetch_records(options={})
-      self.adapter.call("#{self.service_namespace}__#{self.service}", options.merge(default_options)).collect { |hash| self.new_from_data_store(hash) }.compact
+      self.read_adapter.read(options).collect { |hash| self.new_from_data_store(hash) }.compact
     end
 
-    def adapter
-      @@adapter_pool[self.adapter_type] ||= RPCMapper::Adapters::AbstractAdapter.create(self.adapter_type, { :host => self.rpc_server_host, :port => self.rpc_server_port })
+    def read_with(adapter_type)
+      setup_adapter(:read, { :type => adapter_type })
+    end
+
+    def write_with(adapter_type)
+      if write_adapter
+        write_inheritable_attribute :write_adapter, nil if adapter_type != write_adapter.type
+      else
+        # TRP: Pull in methods and libraries needed for mutable functionality
+        require 'rpc_mapper/persistence' unless defined?(RPCMapper::Persistence)
+        self.send(:include, RPCMapper::Persistence) unless self.class.ancestors.include?(RPCMapper::Persistence)
+
+        # TRP: Create writers if attributes are declared before configure_mutable is called
+        self.defined_attributes.each { |attribute| create_writer(attribute) }
+        # TRP: Create serialized writers if attributes are declared serialized before this call
+        self.serialized_attributes.each { |attribute| set_serialize_writers(attribute) }
+      end
+      setup_adapter(:write, { :type => adapter_type })
+    end
+
+    def configure_read(&block)
+      configure_adapter(:read, &block)
+    end
+
+    def configure_write(&block)
+      configure_adapter(:write, &block)
     end
 
     def method_missing(method, *args, &block)
@@ -133,27 +125,6 @@ class RPCMapper::Base
         scoped.send(method, *args, &block)
       else
         super
-      end
-    end
-
-    def configure(options={})
-      self.configure_options.each { |option| self.send("#{option}=", options[option]) if options[option] }
-    end
-
-    # TRP: Only pulls in mutable module if configure_mutable is called
-    def configure_mutable(options={})
-      unless mutable
-        self.mutable = true
-
-        # TRP: Pull in methods and libraries needed for mutable functionality
-        require 'rpc_mapper/mutable'
-        self.send(:include, RPCMapper::Mutable)
-        self.save_mutable_configuration(options)
-
-        # TRP: Create writers if attributes are declared before configure_mutable is called
-        self.defined_attributes.each { |attribute| create_writer(attribute) }
-        # TRP: Create serialized writers if attributes are declared serialized before this call
-        self.serialized_attributes.each { |attribute| set_serialize_writers(attribute) }
       end
     end
 
@@ -176,7 +147,7 @@ class RPCMapper::Base
         end
 
         # TRP: Setup the writers if mutable is set
-        create_writer(attribute) if self.mutable
+        create_writer(attribute) if self.write_adapter
 
       end
     end
@@ -196,6 +167,28 @@ class RPCMapper::Base
     def current_scope
       self.scoped_methods ||= []
       self.scoped_methods.last
+    end
+
+    private
+
+    def setup_adapter(mode, config)
+      current_adapter = read_inheritable_attribute :"#{mode}_adapter"
+      type = config[:type] if config.is_a?(Hash)
+
+      new_adapter = if current_adapter
+        current_adapter.extend_adapter(config)
+      else
+        RPCMapper::Adapters::AbstractAdapter.create(type, config)
+      end
+
+      write_inheritable_attribute :"#{mode}_adapter", new_adapter
+    end
+
+    def configure_adapter(mode, &block)
+      raise ArgumentError, "A block must be passed to configure_#{mode} method." unless block_given?
+      raise ArgumentError, "You must first define an adapter before configuring it.  Use #{mode}_with :adapter_type." unless self.send(:"#{mode}_adapter")
+
+      setup_adapter(mode, block)
     end
 
   end

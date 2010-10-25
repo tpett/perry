@@ -1,9 +1,27 @@
+autoload :BERTRPC, 'bertrpc'
+
 module RPCMapper::Adapters
   class BERTRPCAdapter < RPCMapper::Adapters::AbstractAdapter
     register_as :bertrpc
 
+    @@service_pool ||= {}
+
     def service
-      @service ||= BERTRPC::Service.new(self.options[:host], self.options[:port])
+      @@service_pool["#{config[:host]}:#{config[:port]}"] ||= BERTRPC::Service.new(self.config[:host], self.config[:port])
+    end
+
+    def read(options)
+      log(options, "RPC #{config[:service]}") { self.service.call.send(self.namespace).send(self.service_name, options.merge(options[:default_options] || {})) }
+    end
+
+    protected
+
+    def namespace
+      self.config[:namespace]
+    end
+
+    def service_name
+      self.config[:service]
     end
 
   end

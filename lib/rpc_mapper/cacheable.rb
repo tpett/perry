@@ -16,7 +16,7 @@ module RPCMapper::Cacheable
       cache_hit = self.cacheable.read(key)
 
       if cache_hit
-        self.adapter.log(options, "CACHE #{self.service_namespace}__#{self.service}")
+        self.read_adapter.log(options, "CACHE")
         cache_hit.each { |fv| fv.fresh = false.freeze }
         cache_hit
       else
