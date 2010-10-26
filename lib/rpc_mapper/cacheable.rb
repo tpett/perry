@@ -14,9 +14,10 @@ module RPCMapper::Cacheable
     def fetch_records_with_caching(options={})
       key = Digest::MD5.hexdigest(self.to_s + options.to_a.sort { |a,b| a.to_s.first <=> b.to_s.first }.inspect)
       cache_hit = self.cacheable.read(key)
+      get_fresh = options.delete(:fresh)
 
-      if cache_hit
-        self.read_adapter.log(options, "CACHE")
+      if cache_hit && !get_fresh
+        self.read_adapter.log(options, "CACHE #{self.class.name}")
         cache_hit.each { |fv| fv.fresh = false.freeze }
         cache_hit
       else

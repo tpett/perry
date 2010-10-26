@@ -314,8 +314,16 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
         assert !@model.first.fresh
       end
 
-      # TRP: (TODO) Not needed yet, and I'm not certain how I want to tackle this
-      #should "rerun query if force is passed"
+      should "rerun query if fresh scope called" do
+        assert_not_equal @model.first, @model.fresh.first
+        assert_equal 2, @adapter.calls.size
+      end
+
+      should "rerun query if :fresh finder option passed" do
+        assert_not_equal @model.first, @model.first(:fresh => true)
+        assert_equal 2, @adapter.calls.size
+      end
+
     end
 
 

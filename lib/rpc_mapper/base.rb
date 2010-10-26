@@ -54,7 +54,7 @@ class RPCMapper::Base
     public
 
     delegate :find, :first, :all, :search, :apply_finder_options, :to => :scoped
-    delegate :select, :group, :order, :joins, :where, :having, :limit, :offset, :from, :to => :scoped
+    delegate :select, :group, :order, :joins, :where, :having, :limit, :offset, :from, :fresh, :to => :scoped
 
     def new_from_data_store(hash)
       if hash.nil?
