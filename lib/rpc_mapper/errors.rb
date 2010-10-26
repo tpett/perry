@@ -8,9 +8,8 @@ module RPCMapper
   class RecordNotFound < RPCMapperError
   end
 
-  # TODO:
-  # # Raised when RPCMapper cannot save a record through the mutable adapter
-  # class RecordNotSaved < RPCMapperError
-  # end
+  # Raised when RPCMapper cannot save a record through the write_adapter and save! or update_attributes! was used
+  class RecordNotSaved < RPCMapperError
+  end
 
 end

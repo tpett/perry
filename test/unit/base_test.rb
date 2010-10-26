@@ -325,43 +325,40 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
     context "persistence methods" do
       setup do
         @model.class_eval do
-          attributes :id, :a, :b, :c
-          write_with :restful_http
-          configure_write do |config|
-            config.host = 'http://test.local'
-            config.service = 'foo'
-            config.post_body_wrapper = 'foo'
-          end
+          attributes :a, :b
+          write_with :test
         end
+        @object = @model.new
       end
 
-      teardown do
-        FakeWeb.clean_registry
+      should "call write method on the write_adapter when save called" do
+        assert @object.save
+        assert_equal @object, @model.write_adapter.last_call.last
       end
 
-      should "do a PUT when saving an existing record" do
-        FakeWeb.register_uri(:put, 'http://test.local/foo/1', :body => "OK")
-        instance = @model.new_from_data_store(:id => 1, :a => 'a', :b => 'b', :c => 'c')
-        instance.a = 'change'
-        assert instance.save
-        assert FakeWeb.last_request && FakeWeb.last_request.body_exist?
-        assert_kind_of Net::HTTP::Put, FakeWeb.last_request
+      should "call delete method on the write_adapter when delete called" do
+        @object.new_record = false
+        assert @object.delete
+        assert_equal @object, @model.write_adapter.last_call.last
       end
 
-      should "do a POST when saving a new record" do
-        FakeWeb.register_uri(:post, 'http://test.local/foo', :body => "OK")
-        instance = @model.new(:id => 2, :a => 'a', :b => 'b', :c => 'c')
-        assert instance.save
-        assert FakeWeb.last_request && FakeWeb.last_request.body_exist?
-        assert_kind_of Net::HTTP::Post, FakeWeb.last_request
+      should "not call delete method on the write adapter when new_record? is true" do
+        assert !@object.delete
+        assert !@model.write_adapter.last_call
       end
 
-      should "do a DELETE when deleting an existing record" do
-        FakeWeb.register_uri(:delete, 'http://test.local/foo/1', :body => "OK")
-        instance = @model.new_from_data_store(:id => 1, :a => 'a', :b => 'b', :c => 'c')
-        assert instance.delete
-        assert FakeWeb.last_request
-        assert_kind_of Net::HTTP::Delete, FakeWeb.last_request
+      should "set attribtues and save on update_attributes" do
+        obj = @model.new_from_data_store(:a => 'a', :b => 'b')
+        assert obj.update_attributes(:b => 'c')
+        assert_equal obj, @model.write_adapter.last_call.last
+        assert_equal 'a', obj.a
+        assert_equal 'c', obj.b
+      end
+
+      should "raise exception if save! or update_attributes! called and failed" do
+        @object.write_adapter.writes_return false
+        assert_raises(RPCMapper::RecordNotSaved) { @object.save! }
+        assert_raises(RPCMapper::RecordNotSaved) { @object.update_attributes!({}) }
       end
 
     end

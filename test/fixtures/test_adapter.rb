@@ -5,6 +5,7 @@ module RPCMapper::Test
     @@calls = []
     @@count = nil
     @@data = nil
+    @@writes_return_value = true
 
     def read(options)
       @@calls << [:read, options]
@@ -13,12 +14,12 @@ module RPCMapper::Test
 
     def write(object)
       @@calls << [:write, object]
-      true
+      @@writes_return_value
     end
 
     def delete(object)
       @@calls << [:delete, object]
-      true
+      @@writes_return_value
     end
 
     def last_call
@@ -41,10 +42,15 @@ module RPCMapper::Test
       @@calls
     end
 
+    def writes_return(val)
+      @@writes_return_value = val
+    end
+
     def reset
       @@calls = []
       @@data = nil
       @@count = nil
+      @@writes_return_value = true
     end
 
   end

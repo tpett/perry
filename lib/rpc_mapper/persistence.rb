@@ -27,13 +27,21 @@ module RPCMapper::Persistence
       write_adapter.write(self)
     end
 
+    def save!
+      save or raise RPCMapper::RecordNotSaved
+    end
+
     def update_attributes(attributes)
       self.attributes = attributes
       save
     end
 
+    def update_attributes!(attributes)
+      update_attributes(attributes) or raise RPCMapper::RecordNotSaved
+    end
+
     def destroy
-      write_adapter.delete(self)
+      write_adapter.delete(self) unless self.new_record?
     end
     alias :delete :destroy
 
