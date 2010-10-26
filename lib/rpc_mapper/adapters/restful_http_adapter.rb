@@ -5,6 +5,8 @@ module RPCMapper::Adapters
   class RestfulHTTPAdapter < RPCMapper::Adapters::AbstractAdapter
     register_as :restful_http
 
+    attr_reader :last_response
+
     def write(object)
       params = build_params_from_attributes(object)
       object.new_record? ? post_http(object, params) : put_http(object, params)
