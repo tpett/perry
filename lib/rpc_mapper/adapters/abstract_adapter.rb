@@ -7,12 +7,10 @@ module RPCMapper::Adapters
     attr_accessor :config
     attr_reader :type
     @@registered_adapters ||= {}
-    class_inheritable_accessor :configuration_contexts
-    self.configuration_contexts = []
 
     def initialize(type, config)
       @type = type.to_sym
-      self.configuration_contexts << config
+      @configuration_contexts = config.is_a?(Array) ? config : [config]
     end
 
     def self.create(type, config)
@@ -21,7 +19,7 @@ module RPCMapper::Adapters
     end
 
     def extend_adapter(config)
-      self.class.create(self.type, config)
+      self.class.create(self.type, @configuration_contexts + [*config])
     end
 
     def config
@@ -48,7 +46,7 @@ module RPCMapper::Adapters
 
     # TRP: Run each configure block in order of class hierarchy / definition and merge the results.
     def build_configuration
-      self.configuration_contexts.collect do |config_block|
+      @configuration_contexts.collect do |config_block|
         config_block.is_a?(Hash) ? config_block : OpenStruct.new.tap { |os| config_block.call(os) }.marshal_dump
       end.inject({}) { |sum, config| sum.merge(config) }
     end
