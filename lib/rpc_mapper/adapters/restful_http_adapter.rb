@@ -7,6 +7,11 @@ module RPCMapper::Adapters
 
     attr_reader :last_response
 
+    def initialize(*args)
+      super
+      self.config[:primary_key] ||= :id
+    end
+
     def write(object)
       params = build_params_from_attributes(object)
       object.new_record? ? post_http(object, params) : put_http(object, params)
@@ -65,6 +70,7 @@ module RPCMapper::Adapters
     def build_params_from_attributes(object)
       if self.config[:post_body_wrapper]
         params = self.config[:default_options] || {}
+        params.merge!(object.write_options[:default_options]) if object.write_options.is_a?(Hash) && object.write_options[:default_options].is_a?(Hash)
 
         object.attributes.each do |attribute, value|
           params.merge!({"#{self.config[:post_body_wrapper]}[#{attribute}]" => value})
@@ -78,7 +84,7 @@ module RPCMapper::Adapters
 
     def build_uri(object, method)
       url = [self.config[:host].gsub(%r{/$}, ''), self.config[:service]]
-      url << object.id unless object.new_record?
+      url << object.send(self.config[:primary_key]) unless object.new_record?
       uri = URI.parse "#{url.join('/')}#{self.config[:format]}"
 
       # TRP: method DELETE has no POST body so we have to append any default options onto the query string

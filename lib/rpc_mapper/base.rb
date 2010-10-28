@@ -15,7 +15,7 @@ class RPCMapper::Base
   include RPCMapper::Serialization
   include RPCMapper::Scopes
 
-  attr_accessor :attributes, :new_record
+  attr_accessor :attributes, :new_record, :read_options, :write_options
   alias :new_record? :new_record
 
   class_inheritable_accessor :read_adapter, :write_adapter, :cacheable, :defined_attributes, :scoped_methods, :declared_associations
