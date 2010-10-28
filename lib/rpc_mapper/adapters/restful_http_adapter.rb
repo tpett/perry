@@ -9,7 +9,7 @@ module RPCMapper::Adapters
 
     def initialize(*args)
       super
-      self.config[:primary_key] ||= :id
+      @configuration_contexts << { :primary_key => :id }
     end
 
     def write(object)
