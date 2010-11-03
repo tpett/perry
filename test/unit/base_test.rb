@@ -410,7 +410,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       setup do
         @comment = RPCMapper::Test::Blog::Comment.new(:parent_type => "Article")
         @subject_on_comment = lambda do |association|
-          @comment.send(:klass_from_association_options, association.to_sym, RPCMapper::Test::Blog::Comment.declared_associations[association.to_sym].last.dup)
+          @comment.send(:klass_from_association_options, association.to_sym, RPCMapper::Test::Blog::Comment.declared_associations[association.to_sym].options.dup)
         end
       end
 

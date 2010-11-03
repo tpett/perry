@@ -3,6 +3,15 @@ module RPCMapper::Associations
   module Common
     module ClassMethods
 
+      def base_class_name(klass)
+        klass.to_s.split("::").last
+      end
+
+      # TRP: This will return the most recent extension of klass or klass if it is a leaf node in the hierarchy
+      def resolve_leaf_klass(klass)
+        extension_map[klass].empty? ? klass : resolve_leaf_klass(extension_map[klass].last)
+      end
+
       protected
 
       def extension_map
@@ -11,15 +20,6 @@ module RPCMapper::Associations
 
       def update_extension_map(old_klass, new_klass)
         self.extension_map[old_klass] += [new_klass] if base_class_name(old_klass) == base_class_name(new_klass)
-      end
-
-      # TRP: This will return the most recent extension of klass or klass if it is a leaf node in the hierarchy
-      def resolve_leaf_klass(klass)
-        extension_map[klass].empty? ? klass : resolve_leaf_klass(extension_map[klass].last)
-      end
-
-      def base_class_name(klass)
-        klass.to_s.split("::").last
       end
 
     end
