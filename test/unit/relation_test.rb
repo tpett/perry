@@ -1,7 +1,7 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 
 class RPCMapper::RelationTest < Test::Unit::TestCase
-  SINGLE_VALUE_METHODS = [:limit, :offset, :from]
+  SINGLE_VALUE_METHODS = [:limit, :offset, :from, :fresh]
   MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :where, :having]
 
   context "RPCMapper::Relation class" do

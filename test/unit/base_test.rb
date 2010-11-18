@@ -315,13 +315,25 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       end
 
       should "rerun query if fresh scope called" do
-        assert_not_equal @model.first, @model.fresh.first
+        assert_not_equal @model.fresh.first, @model.fresh.first
         assert_equal 2, @adapter.calls.size
       end
 
       should "rerun query if :fresh finder option passed" do
-        assert_not_equal @model.first, @model.first(:fresh => true)
+        assert_not_equal @model.first(:fresh => true), @model.first(:fresh => true)
         assert_equal 2, @adapter.calls.size
+      end
+
+      context "reset_cache_store method" do
+
+        should "clear out cache store" do
+          @extend_model = Class.new(@model)
+          @extend_model.first
+          @model.reset_cache_store
+          @extend_model.first
+          assert_equal 2, @adapter.calls.size
+        end
+
       end
 
     end
