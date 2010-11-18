@@ -11,17 +11,18 @@ module RPCMapper::Cacheable
 
     protected
 
-    def fetch_records_with_caching(options={})
+    def fetch_records_with_caching(relation)
+      options = relation.to_hash
       key = Digest::MD5.hexdigest(self.to_s + options.to_a.sort { |a,b| a.to_s.first <=> b.to_s.first }.inspect)
       cache_hit = self.cacheable.read(key)
       get_fresh = options.delete(:fresh)
 
       if cache_hit && !get_fresh
-        self.read_adapter.log(options, "CACHE #{self.class.name}")
+        self.read_adapter.log(options, "CACHE #{self.name}")
         cache_hit.each { |fv| fv.fresh = false.freeze }
         cache_hit
       else
-        fresh_value = fetch_records_without_caching(options)
+        fresh_value = fetch_records_without_caching(relation)
 
         # TRP: Only store in cache if record count is below the cache_record_count_threshold (if it is set)
         if !self.cache_record_count_threshold || fresh_value.size <= self.cache_record_count_threshold

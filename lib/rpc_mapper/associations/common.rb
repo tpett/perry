@@ -32,9 +32,9 @@ module RPCMapper::Associations
         klass = if options[:polymorphic]
           eval [options[:polymorphic_namespace], self.send("#{association}_type")].compact.join('::')
         else
-          raise(ArgumentError, ":class_name or :klass option required for association declaration.") unless options[:class_name] || options[:klass]
+          raise(ArgumentError, ":class_name option required for association declaration.") unless options[:class_name]
           options[:class_name] = "::#{options[:class_name]}" unless options[:class_name] =~ /^::/
-          options[:klass] || eval(options[:class_name])
+          eval(options[:class_name])
         end
 
         self.class.send :resolve_leaf_klass, klass

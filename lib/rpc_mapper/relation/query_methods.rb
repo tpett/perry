@@ -1,8 +1,8 @@
 module RPCMapper::QueryMethods
   # TRP: Define each of the variables the query options will be stored in.
-  attr_accessor :select_values, :group_values, :order_values, :joins_values, :where_values,
-                :having_values, :limit_value, :offset_value, :from_value, :raw_sql_value,
-                :fresh_value
+  attr_accessor :select_values, :group_values, :order_values, :joins_values, :includes_values, :where_values, :having_values,
+                :limit_value, :offset_value, :from_value,
+                :raw_sql_value, :fresh_value
 
   def select(*args)
     if block_given?
@@ -24,8 +24,13 @@ module RPCMapper::QueryMethods
     clone.tap { |r| r.joins_values += args if args && !args.empty? }
   end
 
+  def includes(*args)
+    args.reject! { |a| a.nil? }
+    clone.tap { |r| r.includes_values += (r.includes_values + args).flatten.uniq if args && !args.empty? }
+  end
+
   def where(*args)
-    clone.tap { |r| r.where_values += args if args && !args.empty? }
+    clone.tap { |r| r.where_values += args.compact.reject(&:empty?) if args && !args.empty? }
   end
 
   def having(*args)

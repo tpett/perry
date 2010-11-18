@@ -410,7 +410,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       setup do
         @comment = RPCMapper::Test::Blog::Comment.new(:parent_type => "Article")
         @subject_on_comment = lambda do |association|
-          @comment.send(:klass_from_association_options, association.to_sym, RPCMapper::Test::Blog::Comment.declared_associations[association.to_sym].options.dup)
+          @comment.send(:klass_from_association_options, association.to_sym, RPCMapper::Test::Blog::Comment.defined_associations[association.to_sym].options.dup)
         end
       end
 
@@ -553,6 +553,17 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
         end
       end
     end
+
+    #-----------------------------------------
+    # TRP: Association Preload (eager loading)
+    #-----------------------------------------
+    context "includes query method" do
+
+      should "run 1+n queries where n is the # of associations to load"
+      should "set the value of the association"
+
+    end
+
 
   end
 

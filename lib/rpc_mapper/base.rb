@@ -2,6 +2,7 @@
 require 'rpc_mapper/errors'
 require 'rpc_mapper/associations/contains'
 require 'rpc_mapper/associations/external'
+require 'rpc_mapper/association_preload'
 require 'rpc_mapper/cacheable'
 require 'rpc_mapper/serialization'
 require 'rpc_mapper/relation'
@@ -12,16 +13,17 @@ require 'rpc_mapper/adapters'
 class RPCMapper::Base
   include RPCMapper::Associations::Contains
   include RPCMapper::Associations::External
+  include RPCMapper::AssociationPreload
   include RPCMapper::Serialization
   include RPCMapper::Scopes
 
   attr_accessor :attributes, :new_record, :read_options, :write_options
   alias :new_record? :new_record
 
-  class_inheritable_accessor :read_adapter, :write_adapter, :cacheable, :defined_attributes, :scoped_methods, :declared_associations
+  class_inheritable_accessor :read_adapter, :write_adapter, :cacheable, :defined_attributes, :scoped_methods, :defined_associations
 
   self.cacheable = false
-  self.declared_associations = {}
+  self.defined_associations = {}
   self.defined_attributes = []
 
   def initialize(attributes={})
@@ -88,8 +90,9 @@ class RPCMapper::Base
 
     protected
 
-    def fetch_records(options={})
-      self.read_adapter.read(options).collect { |hash| self.new_from_data_store(hash) }.compact
+    def fetch_records(relation)
+      options = relation.to_hash
+      self.read_adapter.read(options).collect { |hash| self.new_from_data_store(hash) }.compact.tap { |result| eager_load_associations(result, relation) }
     end
 
     def read_with(adapter_type)

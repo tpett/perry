@@ -22,7 +22,7 @@ module RPCMapper::Associations
 
       def create_external_association(association)
         cache_ivar = "@association_#{association.id}"
-        self.declared_associations[association.id] = association
+        self.defined_associations[association.id] = association
 
         define_method(association.id) do
           cached_value = instance_variable_get(cache_ivar)
@@ -40,7 +40,7 @@ module RPCMapper::Associations
         end
 
         # TRP: Allow eager loading of the association without having to load it through the normal accessor
-        define_method("#{association}=") do |value|
+        define_method("#{association.id}=") do |value|
           instance_variable_set(cache_ivar, value)
         end
       end

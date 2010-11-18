@@ -12,4 +12,13 @@ module RPCMapper
   class RecordNotSaved < RPCMapperError
   end
 
+  # Raised when trying to eager load an association that relies on instance level data.
+  # class Article < RPCMapper::Base
+  #   has_many :comments, :conditions => lambda { |article| ... }
+  # end
+  #
+  # Article.recent.includes(:comments) # Raises AssociationPreloadNotSupported
+  class AssociationPreloadNotSupported < RPCMapperError
+  end
+
 end

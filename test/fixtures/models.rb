@@ -32,10 +32,12 @@ module RPCMapper::Test
       has_one :fun_articles, {
         :class_name => "RPCMapper::Test::Blog::Article",
         :conditions => "1",
-        :sql => %q{
-          SELECT articles.*
-          FROM articles
-          WHERE articles.text LIKE %monkeyonabobsled% AND articles.site_id = #{id}
+        :sql => lambda { |s|
+          %Q{
+            SELECT articles.*
+            FROM articles
+            WHERE articles.text LIKE %monkeyonabobsled% AND articles.site_id = #{s.id}
+          }
         }
       }
       has_many :articles, :class_name => "RPCMapper::Test::Blog::Article"
@@ -43,11 +45,13 @@ module RPCMapper::Test
       has_many :awesome_comments, {
         :class_name => "RPCMapper::Test::Blog::Comment",
         :conditions => "1",
-        :sql => %q{
-          SELECT comments.*
-          FROM comments
-          WHERE comments.text LIKE '%awesome%' AND parent_type = "Site" AND parent_id = #{id}
-       }
+        :sql => lambda { |s|
+          %Q{
+            SELECT comments.*
+            FROM comments
+            WHERE comments.text LIKE '%awesome%' AND parent_type = "Site" AND parent_id = #{s.id}
+          }
+        }
       }
     end
 
@@ -56,6 +60,7 @@ module RPCMapper::Test
       belongs_to :site, :class_name => "RPCMapper::Test::Blog::Site"
       belongs_to :author, :class_name => "RPCMapper::Test::Blog::Person"
       has_many :comments, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment"
+      has_many :awesome_comments, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment", :conditions => "text LIKE '%awesome%'"
     end
 
     class Comment < RPCMapper::Test::Base

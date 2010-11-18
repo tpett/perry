@@ -6,7 +6,7 @@ require 'rpc_mapper/relation/finder_methods'
 # Used to achieve the chainability of scopes -- methods are delegated back and forth from BM::Base and BM::Relation
 class RPCMapper::Relation
   SINGLE_VALUE_METHODS = [:limit, :offset, :from, :fresh]
-  MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :where, :having]
+  MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :includes, :where, :having]
 
   FINDER_OPTIONS = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS + [:conditions, :search, :sql]
 
@@ -38,7 +38,7 @@ class RPCMapper::Relation
 
   def to_hash
     # TRP: If present pass :sql option alone as it trumps all other options
-    if self.raw_sql_value
+    @hash ||= if self.raw_sql_value
       { :sql => raw_sql_value }
     else
       hash = SINGLE_VALUE_METHODS.inject({}) do |h, option|
@@ -62,6 +62,10 @@ class RPCMapper::Relation
 
   def to_a
     @records ||= fetch_records
+  end
+
+  def eager_load?
+    @includes_values && !@includes_values.empty?
   end
 
   def inspect
@@ -119,7 +123,7 @@ class RPCMapper::Relation
   end
 
   def fetch_records
-    @klass.send(:fetch_records, to_hash)
+    @klass.send(:fetch_records, self)
   end
 
 end
