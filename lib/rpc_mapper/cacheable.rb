@@ -9,6 +9,10 @@ module RPCMapper::Cacheable
     # TRP: Default to a 5 minute cache
     DEFAULT_LONGEVITY = 5*60
 
+    def reset_cache_store
+      self.cacheable = RPCMapper::Cacheable::Store.new(DEFAULT_LONGEVITY)
+    end
+
     protected
 
     def fetch_records_with_caching(options={})
@@ -34,7 +38,7 @@ module RPCMapper::Cacheable
     end
 
     def enable_caching(options)
-      self.cacheable = RPCMapper::Cacheable::Store.new(DEFAULT_LONGEVITY)
+      reset_cache_store
       self.cache_expires = options[:expires]
       self.cache_record_count_threshold = options[:record_count_threshold]
     end
