@@ -49,7 +49,7 @@ module RPCMapper::Association
 
     # TRP: Only eager loadable if association query does not depend on instance data
     def eager_loadable?
-      !(options[:sql] || RPCMapper::Relation::FINDER_OPTIONS.inject(false) { |condition, key| condition || options[key].respond_to?(:call) })
+      RPCMapper::Relation::FINDER_OPTIONS.inject(true) { |condition, key| condition && !options[key].respond_to?(:call) }
     end
 
     protected

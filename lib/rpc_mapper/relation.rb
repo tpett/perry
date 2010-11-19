@@ -5,6 +5,7 @@ require 'rpc_mapper/relation/finder_methods'
 # => http://github.com/rails/rails
 # Used to achieve the chainability of scopes -- methods are delegated back and forth from BM::Base and BM::Relation
 class RPCMapper::Relation
+  attr_reader :klass
   SINGLE_VALUE_METHODS = [:limit, :offset, :from, :fresh]
   MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :includes, :where, :having]
 

@@ -14,10 +14,6 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
         assert @association.eager_loadable?
       end
 
-      should "return false if :sql option used" do
-        assert !@klass.new(@model, 'bar', :sql => "some sql statement").eager_loadable?
-      end
-
       should "return false if a block is used for the param of any finder option" do
         RPCMapper::Relation::FINDER_OPTIONS.each do |option|
           assert !@klass.new(@model, 'bar', option => lambda {}).eager_loadable?

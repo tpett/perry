@@ -25,9 +25,10 @@ module RPCMapper::Test
   # TRP: Used for testing external associations
   module Blog
     class Site < RPCMapper::Test::Base
-      attributes :id, :name
+      attributes :id, :name, :maintainer_id
       write_with :test
-      has_one :maintainer, :class_name => "RPCMapper::Test::Blog::Person"
+      belongs_to :maintainer, :class_name => "RPCMapper::Test::Blog::Person"
+      has_one :headline, :class_name => "RPCMapper::Test::Blog::Article"
       has_one :master_comment, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment"
       has_one :fun_articles, {
         :class_name => "RPCMapper::Test::Blog::Article",
@@ -70,7 +71,7 @@ module RPCMapper::Test
     end
 
     class Person < RPCMapper::Test::Base
-      attributes :id, :name, :site_id
+      attributes :id, :name
       has_many :authored_comments, :class_name => "RPCMapper::Test::Blog::Comment", :foreign_key => :person_id
       has_many :articles, :class_name => "RPCMapper::Test::Blog::Article"
       has_many :comments, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment"
