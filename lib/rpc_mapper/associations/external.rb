@@ -31,7 +31,7 @@ module RPCMapper::Associations
           unless cached_value
             scoped = association.scope(self)
 
-            cached_value = association.collection? ? scoped : scoped.first unless scoped.where_values.empty?
+            cached_value = association.collection? ? scoped : scoped.first if scoped && !scoped.where_values.empty?
 
             instance_variable_set(cache_ivar, cached_value)
           end

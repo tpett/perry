@@ -45,21 +45,6 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
     end
 
-    context "scope method" do
-      setup do
-        @article = RPCMapper::Test::Blog::Article
-      end
-      should "return a scope for the target class" do
-        record = @article.new
-        assert_equal RPCMapper::Relation, @article.defined_associations[:site].scope(record).class
-      end
-
-      should "the scope should have the options from the finder_options method" do
-        record = @article.new(:site_id => 1)
-        assert_equal({ :id => 1 }, @article.defined_associations[:site].scope(record).where_values.first)
-      end
-    end
-
   end
 
   context ":belongs_to association" do
@@ -90,19 +75,24 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
       assert @klass.new(@model, 'bar', :polymorphic => true).polymorphic?
     end
 
-    context "finder_options method" do
-      # :conditions option will be stomped by the belongs_to condition building
-      (RPCMapper::Relation::FINDER_OPTIONS - [:conditions, :where]).each do |option|
-        should "contain finder option #{option} if provided on the association" do
-          association = @klass.new(@model, "bar_#{option}", option => 'foo')
-          assert_equal 'foo', association.finder_options(@model.new)[option]
-        end
+    context "scope method" do
+      setup do
+        @article = RPCMapper::Test::Blog::Article
       end
 
-      should "set a condition that the primary key should equal value of the foreign_key field" do
-        model = RPCMapper::Test::Blog::Article
-        a = model.defined_associations[:author]
-        assert_equal({ :id => 1 }, a.finder_options(model.new_from_data_store(:author_id => 1))[:conditions])
+      should "return nil if no foreign_key present" do
+        record = @article.new
+        assert_nil @article.defined_associations[:site].scope(record)
+      end
+
+      should "return a scope for the target class if association present" do
+        record = @article.new(:site_id => 1)
+        assert_equal(RPCMapper::Relation, @article.defined_associations[:site].scope(record).class)
+      end
+
+      should "the scope should have the options for he association query" do
+        record = @article.new(:site_id => 1)
+        assert_equal({ :id => 1 }, @article.defined_associations[:site].scope(record).where_values.first)
       end
 
     end
@@ -111,6 +101,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
   context "has associations" do
     setup do
+      @blog = RPCMapper::Test::Blog
       @klass = RPCMapper::Association::Has
       @model = Class.new(RPCMapper::Base)
       @association = @klass.new(@model, "foo")
@@ -126,23 +117,48 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
     end
 
     context "foreign_key method" do
-      should "return {:as}_id on polymorphic associations by default"
-      should "return the lowercase source class name followed by _id if association is not polymorphic"
-      should "use :foreign_key option if specified"
+
+      should "return {:as}_id on polymorphic associations by default" do
+        poly_association = @klass.new(@model, 'bar', :as => :parent)
+        assert_equal :parent_id, poly_association.foreign_key
+      end
+
+      should "return the lowercase source class name followed by _id if association is not polymorphic" do
+        articles = @blog::Site.defined_associations[:articles]
+        assert_equal :site_id, articles.foreign_key
+      end
+
+      should "use :foreign_key option if specified" do
+        a = @klass.new(@model, 'bar', :as => :parent, :foreign_key => :purple_monkey)
+        assert_equal :purple_monkey, a.foreign_key
+      end
+
     end
 
-    context "finder_options method" do
-      should "contain any default finder options on the association"
-      should "set a condition for :foreign_key to equal the source object's primary key"
+    context "scope method" do
+      setup do
+        @article = RPCMapper::Test::Blog::Article
+      end
 
-      # should "push conditions onto an array if conditions applied on association declaration" do
-      #   model = RPCMapper::Test::Blog::Article
-      #   a = model.defined_associations[:awesome_comments]
-      #   obj = model.new_from_data_store(:id => 1)
-      #   assert_equal ["text LIKE '%awesome%'", {:parent_id => 1, :parent_type => "Article"}], a.finder_options(obj)[:conditions]
-      # end
+      should "return nil if no foreign_key present" do
+        record = @article.new
+        assert_nil @article.defined_associations[:comments].scope(record)
+      end
 
-      should "set a option for {:as}_type to equal the base class name of the source if polymorphic"
+      should "return a scope for the target class if association present" do
+        record = @article.new(:id => 1)
+        assert_equal(RPCMapper::Relation, @article.defined_associations[:comments].scope(record).class)
+      end
+
+      should "the scope should have the options for the association method" do
+        record = @article.new(:id => 1)
+        assert_equal([{ :parent_id => 1 }, { :parent_type => "Article" }], @article.defined_associations[:comments].scope(record).where_values)
+      end
+
+      should "include base association options in the scope" do
+        record = @article.new(:id => 1)
+        assert_equal "text LIKE '%awesome%'", @article.defined_associations[:awesome_comments].scope(record).where_values.first
+      end
     end
 
     context "specifically the :has_many association" do

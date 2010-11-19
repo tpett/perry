@@ -479,7 +479,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       end
 
       should "set :parent_type, and :parent_id params if :as config used in association declaration" do
-        assert_equal [{ :parent_id => 1, :parent_type => "Site" }], @site.comments.where_values
+        assert_equal [{ :parent_id => 1 }, { :parent_type => "Site" }], @site.comments.where_values
       end
 
       should "use only :sql option for query if it is passed" do
@@ -509,7 +509,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
 
       should "set :parent_type, and :parent_id params if :as config used in association declaration" do
         @site.master_comment
-        assert_equal [{ :parent_id => 1, :parent_type => "Site" }], @adapter.last_call.last[:where]
+        assert_equal [{ :parent_id => 1 }, { :parent_type => "Site" }], @adapter.last_call.last[:where]
       end
 
       should "use only :sql option for query if it is passed" do
@@ -573,6 +573,8 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
 
       should "run 1+n queries where n is the # of associations to load"
       should "set the value of the association"
+      should "raise AssociationPreloadNotSupported if non-has_many associations used"
+      should "raise AssociationPreloadNotSupported if association requires an instance (has lambda options)"
 
     end
 
