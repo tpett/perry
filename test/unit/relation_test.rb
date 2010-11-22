@@ -202,6 +202,34 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
       end
     end
 
+    context "fresh method" do
+      should "force relation to refetch records if it has already run when true passed" do
+        @relation.to_a
+        @relation.to_a
+        @relation.fresh.to_a
+        assert_equal 2, @adapter.calls.size
+      end
+
+      should "set fresh_value to true by default" do
+        assert !@relation.fresh_value
+        @relation = @relation.fresh
+        assert @relation.fresh_value
+      end
+
+      should "not set fresh_value to true if fresh(false) passed" do
+        assert !@relation.fresh_value
+        @relation = @relation.fresh(false)
+        assert !@relation.fresh_value
+      end
+
+      should "not force refetch records when fresh(false) called" do
+        @relation.to_a
+        @relation.to_a
+        @relation.fresh(false).to_a
+        assert_equal 1, @adapter.calls.size
+      end
+    end
+
     context "search method" do
     end
 

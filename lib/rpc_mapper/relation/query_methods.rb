@@ -50,7 +50,10 @@ module RPCMapper::QueryMethods
   end
 
   def fresh(val=true)
-    clone.tap { |r| r.fresh_value = val }
+    clone.tap do |r|
+      r.fresh_value = val
+      r.instance_variable_set(:@records, nil) if r.fresh_value
+    end
   end
 
   def sql(raw_sql)

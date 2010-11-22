@@ -18,11 +18,11 @@ module RPCMapper::FinderMethods
   end
 
   def all(options={})
-    self.apply_finder_options(options).fetch_records
+    self.apply_finder_options(options).to_a
   end
 
   def first(options={})
-    self.apply_finder_options(options).limit(1).fetch_records.first
+    self.apply_finder_options(options).limit(1).to_a.first
   end
 
   def search(options={})
