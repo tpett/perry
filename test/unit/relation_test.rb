@@ -2,7 +2,7 @@ require "#{File.dirname(__FILE__)}/../test_helper"
 
 class RPCMapper::RelationTest < Test::Unit::TestCase
   SINGLE_VALUE_METHODS = [:limit, :offset, :from, :fresh]
-  MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :where, :having]
+  MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :where, :having, :includes]
 
   context "RPCMapper::Relation class" do
     setup do
@@ -251,6 +251,10 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
 
       should "allow :sql key and pass through" do
         assert_equal 'foo', @relation.apply_finder_options(:sql => 'foo').to_hash[:sql]
+      end
+
+      should "allow :include key as alias for :includes" do
+        assert_equal ['foo'], @relation.apply_finder_options(:include => 'foo').to_hash[:includes]
       end
 
       should "allow :search key and pass through to search method" do

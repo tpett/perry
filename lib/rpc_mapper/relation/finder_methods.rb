@@ -37,12 +37,14 @@ module RPCMapper::FinderMethods
     relation = clone
     return relation unless options
 
-    [:joins, :limit, :offset, :order, :select, :group, :having, :from, :fresh].each do |finder|
+    [:joins, :limit, :offset, :order, :select, :group, :having, :from, :fresh, :includes].each do |finder|
       relation = relation.send(finder, options[finder]) if options[finder]
     end
 
     relation = relation.where(options[:conditions]) if options.has_key?(:conditions)
     relation = relation.where(options[:where]) if options.has_key?(:where)
+
+    relation = relation.includes(options[:include]) if options.has_key?(:include)
 
     relation = relation.search(options[:search]) if options.has_key?(:search)
 
