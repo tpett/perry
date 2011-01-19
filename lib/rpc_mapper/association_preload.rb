@@ -4,6 +4,7 @@ module RPCMapper::AssociationPreload
     def eager_load_associations(original_results, relation)
       relation.includes_values.each do |association_id|
         association = self.defined_associations[association_id.to_sym]
+        force_fresh = relation.fresh_value
 
         unless association
           raise(
@@ -25,7 +26,7 @@ module RPCMapper::AssociationPreload
         when :has_many, :has_one
           fks = original_results.collect { |record| record.send(association.primary_key) }.compact
 
-          pre_records = association.target_klass.where(association.foreign_key => fks).all
+          pre_records = association.target_klass.where(association.foreign_key => fks).all(:fresh => force_fresh)
 
           original_results.each do |record|
             pk = record.send(association.primary_key)
@@ -45,7 +46,7 @@ module RPCMapper::AssociationPreload
         when :belongs_to
           fks = original_results.collect { |record| record.send(association.foreign_key) }.compact
 
-          pre_records = association.target_klass.where(association.primary_key => fks).all
+          pre_records = association.target_klass.where(association.primary_key => fks).all(:fresh => force_fresh)
 
           original_results.each do |record|
             fk = record.send(association.foreign_key)

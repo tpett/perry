@@ -63,6 +63,11 @@ class RPCMapper::Relation
     end
   end
 
+  def reset_queries
+    @hash = nil
+    @records = nil
+  end
+
   def to_a
     @records ||= fetch_records
   end

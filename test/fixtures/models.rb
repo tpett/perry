@@ -71,10 +71,13 @@ module RPCMapper::Test
     end
 
     class Person < RPCMapper::Test::Base
-      attributes :id, :name
+      attributes :id, :name, :manager_id
+      configure_cacheable
+      belongs_to :manager, :class_name => "RPCMapper::Test::Blog::Person", :foreign_key => :manager_id
       has_many :authored_comments, :class_name => "RPCMapper::Test::Blog::Comment", :foreign_key => :person_id
-      has_many :articles, :class_name => "RPCMapper::Test::Blog::Article"
+      has_many :articles, :class_name => "RPCMapper::Test::Blog::Article", :foreign_key => :author_id
       has_many :comments, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment"
+      has_many :employees, :class_name => "RPCMapper::Test::Blog::Person", :foreign_key => :manager_id
     end
 
   end

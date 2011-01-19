@@ -52,7 +52,7 @@ module RPCMapper::QueryMethods
   def fresh(val=true)
     clone.tap do |r|
       r.fresh_value = val
-      r.instance_variable_set(:@records, nil) if r.fresh_value
+      r.reset_queries if r.fresh_value
     end
   end
 
