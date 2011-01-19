@@ -32,8 +32,19 @@ module RPCMapper::Association
     end
 
     def target_klass(object=nil)
-      klass = if options[:polymorphic]
-        eval [options[:polymorphic_namespace], object.send("#{id}_type")].compact.join('::') if object
+      klass = if options[:polymorphic] && object
+        type_string = [
+          options[:polymorphic_namespace],
+          sanitize_type_attribute(object.send("#{id}_type"))
+        ].compact.join('::')
+        begin
+          eval(type_string)
+        rescue NameError => err
+          raise(
+            RPCMapper::PolymorphicAssociationTypeError,
+            "No constant defined called #{type_string}"
+          )
+        end
       else
         raise(ArgumentError, ":class_name option required for association declaration.") unless options[:class_name]
         options[:class_name] = "::#{options[:class_name]}" unless options[:class_name] =~ /^::/
@@ -64,6 +75,11 @@ module RPCMapper::Association
         sum.merge!(key => value.respond_to?(:call) ? value.call(object) : value) if value
         sum
       end
+    end
+
+    # TRP: Make sure the value looks like a variable syntaxtually
+    def sanitize_type_attribute(string)
+      string.gsub(/[^a-zA-Z]\w*/, '')
     end
 
   end

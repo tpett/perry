@@ -32,4 +32,11 @@ module RPCMapper
   class AssociationNotFound < RPCMapperError
   end
 
+  # Raised when a polymorphic association type is not present in the specified
+  # scope.  Always be sure that any values set for the type attribute on any
+  # polymorphic association are real constants defined in :polymorphic_namespace
+  #
+  class PolymorphicAssociationTypeError < RPCMapperError
+  end
+
 end

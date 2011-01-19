@@ -39,6 +39,19 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
         assert_equal RPCMapper::Test::Blog::Site, comment.class.defined_associations[:parent].target_klass(comment)
       end
 
+      should "sanitize malicious values in _type column" do
+        comment = RPCMapper::Test::Blog::Comment.new(:parent_type => "Site;::UHOH = true")
+        comment.class.defined_associations[:parent].target_klass(comment)
+        assert_raises(NameError) { UHOH }
+      end
+
+      should "raise PolymorphicAssociationTypeError for missing types" do
+        comment = RPCMapper::Test::Blog::Comment.new(:parent_type => "OhSnap")
+        assert_raises(RPCMapper::PolymorphicAssociationTypeError) do
+          comment.class.defined_associations[:parent].target_klass(comment)
+        end
+      end
+
     end
 
   end
