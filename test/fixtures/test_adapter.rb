@@ -38,6 +38,10 @@ module RPCMapper::Test
       @@count = count
     end
 
+    def count
+      @@count
+    end
+
     def calls
       @@calls
     end

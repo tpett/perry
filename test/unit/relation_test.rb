@@ -40,6 +40,33 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
 
     end
 
+    context "records accessor" do
+      setup do
+        @records = [@model.new, @model.new]
+        @relation.records = @records
+      end
+
+      should "allow records to be assigned" do
+        assert @relation.respond_to?(:records=)
+        assert_equal @records, @relation.to_a
+      end
+
+      should "return the value of records through the reader" do
+        assert_equal @records, @relation.records
+      end
+
+      should "not run a query when records is set" do
+        assert_equal @records, @relation.all
+        assert !@adapter.last_call
+      end
+
+      should "force a query to run with fresh scope even when records is set explicitly" do
+        assert_not_equal @records, @relation.fresh.all
+        assert @adapter.last_call
+      end
+
+    end
+
     context "to_hash method" do
       setup do
         @all_methods = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS

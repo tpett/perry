@@ -4,12 +4,22 @@ module RPCMapper::AssociationPreload
     def eager_load_associations(original_results, relation)
       relation.includes_values.each do |association_id|
         association = self.defined_associations[association_id.to_sym]
-        options = association.options
+
+        unless association
+          raise(
+            RPCMapper::AssociationNotFound,
+            "no such association (#{association_id})"
+          )
+        end
 
         unless association.eager_loadable?
-          raise RPCMapper::AssociationPreloadNotSupported,
-                "delayed execution options (block options) cannot be used for eager loaded associations"
+          raise(
+            RPCMapper::AssociationPreloadNotSupported,
+            "delayed execution options (block options) cannot be used for eager loaded associations"
+          )
         end
+
+        options = association.options
 
         case association.type
         when :has_many, :has_one
@@ -20,7 +30,15 @@ module RPCMapper::AssociationPreload
           original_results.each do |record|
             pk = record.send(association.primary_key)
             relevant_records = pre_records.select { |r| r.send(association.foreign_key) == pk }
-            relevant_records = association.collection? ? relevant_records : relevant_records.first
+
+            relevant_records = if association.collection?
+              scope = association.scope(record).where(association.foreign_key => pk)
+              scope.records = relevant_records
+              scope
+            else
+              relevant_records.first
+            end
+
             record.send("#{association.id}=", relevant_records)
           end
 
