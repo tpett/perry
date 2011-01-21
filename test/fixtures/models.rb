@@ -42,6 +42,8 @@ module RPCMapper::Test
         }
       }
       has_many :articles, :class_name => "RPCMapper::Test::Blog::Article"
+      has_many :article_comments, :through => :articles, :source => :comments
+      has_many :maintainer_articles, :through => :maintainer, :source => :articles
       has_many :comments, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment"
       has_many :awesome_comments, {
         :class_name => "RPCMapper::Test::Blog::Comment",

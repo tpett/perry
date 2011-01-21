@@ -5,11 +5,14 @@ module RPCMapper::Test
     @@calls = []
     @@count = nil
     @@data = nil
+    @@last_result = nil
     @@writes_return_value = true
 
     def read(options)
       @@calls << [:read, options]
-      [].tap { |results| (@@count || options[:limit] || 1).times { results << data } }.compact
+      [].tap do |results|
+        (@@count || options[:limit] || 1).times { results << self.data }
+      end.compact
     end
 
     def write(object)
@@ -27,10 +30,19 @@ module RPCMapper::Test
     end
 
     def data
-      @@data
+      if @@data
+        @@last_result = @@data.dup.tap do |data_hash|
+          data_hash.each do |key, value|
+            data_hash[key] = value.call(@@last_result) if value.is_a?(Proc)
+          end
+        end
+      else
+        nil
+      end
     end
 
     def data=(data)
+      @@last_result = nil
       @@data = data
     end
 

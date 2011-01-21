@@ -16,6 +16,11 @@ module RPCMapper
   class RecordNotSaved < RPCMapperError
   end
 
+  # Used for all association related errors
+  #
+  class AssociationError < RPCMapperError
+  end
+
   # Raised when trying to eager load an association that relies on instance
   # level data.
   # class Article < RPCMapper::Base
@@ -24,19 +29,21 @@ module RPCMapper
   #
   # Article.recent.includes(:comments) # Raises AssociationPreloadNotSupported
   #
-  class AssociationPreloadNotSupported < RPCMapperError
+  class AssociationPreloadNotSupported < AssociationError
   end
 
-  # Raised when trying to eager load an association that does not exist
+  # Raised when trying to eager load an association that does not exist or
+  # trying to create a :has_many_through association with a nonexistant
+  # association as the source
   #
-  class AssociationNotFound < RPCMapperError
+  class AssociationNotFound < AssociationError
   end
 
   # Raised when a polymorphic association type is not present in the specified
   # scope.  Always be sure that any values set for the type attribute on any
   # polymorphic association are real constants defined in :polymorphic_namespace
   #
-  class PolymorphicAssociationTypeError < RPCMapperError
+  class PolymorphicAssociationTypeError < AssociationError
   end
 
 end

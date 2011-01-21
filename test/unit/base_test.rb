@@ -303,7 +303,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       end
 
       should "rerun query if cache is expired" do #should "use :expires option attribute on fresh data to set expire time if :expires option present"
-        @adapter.data[:expire_at] = Time.now
+        @adapter.data = @adapter.data.merge(:expire_at => Time.now)
         @model.first
         @model.first
         assert_equal 2, @adapter.calls.size

@@ -185,6 +185,131 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
       end
     end
 
+    context "specifically the :has_many_through association" do
+      setup do
+        @klass = RPCMapper::Association::HasManyThrough
+        @site = RPCMapper::Test::Blog::Site
+        @association = @site.defined_associations[:article_comments]
+        @adapter = @site.send(:read_adapter)
+      end
+
+      teardown do
+        @adapter.reset
+      end
+
+      should "set type to :has_many_through" do
+        assert_equal :has_many_through, @association.type
+      end
+
+      should "set collection? to true" do
+        assert @association.collection?
+      end
+
+      should "not allow polymorphic associations" do
+        association = @klass.new(@site, :comments, :through => :articles, :as => :poop)
+        assert !association.polymorphic?
+      end
+
+      should "raise an AssociationNotFound exception if :through is not a defined association on class" do
+        assert_raises(RPCMapper::AssociationNotFound) do
+          @klass.new(@site, :foo, :through => :bar).proxy_association
+        end
+      end
+
+      should "raise an AssociationNotFound exception if source association is not defined on the proxy association's class" do
+        assert_raises(RPCMapper::AssociationNotFound) do
+          @klass.new(@site, :foo, :through => :articles).source_association
+        end
+      end
+
+      should "use association name as source association name" do
+        assert_equal(
+          :comments,
+          @klass.new(
+            @site,
+            :comments,
+            :through => :articles
+          ).source_association.id
+        )
+      end
+
+      should "use :source option as source association name if provided" do
+        assert_equal(
+          :comments,
+          @klass.new(
+            @site,
+            :foo_comments,
+            :through => :articles,
+            :source => :comments
+          ).source_association.id
+        )
+      end
+
+      should "return a Relation mapped to the :source association's klass" do
+        @adapter.data = { :id => 1 }
+        site = @site.first
+        comments = site.article_comments
+
+        assert_equal RPCMapper::Relation, comments.class
+        assert_equal RPCMapper::Test::ExtendedBlog::Comment, comments.klass
+      end
+
+      should "execute 2 adapter queries when fetching association" do
+        @adapter.data = { :id => 1 }
+        site = @site.first
+        before_count = @adapter.calls.size
+        site.article_comments.all
+
+        assert_equal(
+          2,
+          @adapter.calls.size - before_count
+        )
+      end
+
+      ##
+      # So here is an example to help define this requirement:
+      #
+      #   class Article < Base
+      #     has_many :comments
+      #   end
+      #
+      #   class Site < Base
+      #     has_many :articles
+      #     has_many :comments, :through => :articles
+      #   end
+      #
+      # If we have articles on a site with IDs 1,2,3.  Calling site.comments would be
+      # equivalent to:
+      #
+      #   Comment.where(:article_id => [1,2,3])
+      #
+      should "scopes all primary keys in top association to source association's foreign key and includes polymorphic type" do
+        @adapter.data = { :id => 1 }
+        site = @site.first
+
+        # TRP: This will start :id at 1 and increment it by 1 on each request
+        @adapter.data = { :id => lambda { |prev| prev ? prev[:id] + 1 : 1 } }
+        @adapter.count = 3
+        relation = site.article_comments
+        assert_equal 2, @adapter.calls.size
+
+        assert_equal(RPCMapper::Test::ExtendedBlog::Comment, relation.klass)
+        assert_equal({ :parent_id => [1,2,3] }, relation.where_values.first)
+        assert_equal({ :parent_type => "Article" }, relation.where_values.last)
+      end
+
+      should "should allow belongs_to as the proxy and build conditions correctly" do
+        @adapter.data = { :id => 1, :maintainer_id => 2 }
+        site = @site.first
+
+        @adapter.data = { :id => 2 }
+        relation = site.maintainer_articles
+
+        assert_equal(RPCMapper::Test::ExtendedBlog::Article, relation.klass)
+        assert_equal({ :author_id => [2] }, relation.where_values.first)
+      end
+    end
+
     context "specifically the :has_one association" do
       setup do
         @klass = RPCMapper::Association::HasOne

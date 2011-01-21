@@ -125,21 +125,30 @@ module RPCMapper::Association
     end
 
 
+    ##
     # Returns a scope on the target containing this association
     #
     # Builds conditions on top of the base_scope generated from any finder options set with the association
     #
-    # has_many :widgets, :class_name => "Widget", :foreign_key => :widget_id
-    # has_many :comments, :as => :parent
+    #   has_many :widgets, :class_name => "Widget", :foreign_key => :widget_id
+    #   has_many :comments, :as => :parent
     #
     # In addition to any finder options included with the association options the following will be added:
-    #  where(widget_id => source[:id])
+    #
+    #   where(widget_id => source[:id])
+    #
     # Or for the polymorphic :comments association:
-    #  where(:parent_id => source[:id], :parent_type => source.class)
+    #
+    #   where(:parent_id => source[:id], :parent_type => source.class)
+    #
     def scope(object)
       s = base_scope(object).where(self.foreign_key => object[self.primary_key]) if object[self.primary_key]
-      s = s.where(:"#{options[:as]}_type" => RPCMapper::Base.base_class_name(object.class)) if s && polymorphic?
+      s = s.where(polymorphic_type => RPCMapper::Base.base_class_name(object.class)) if s && polymorphic?
       s
+    end
+
+    def polymorphic_type
+      :"#{options[:as]}_type"
     end
 
     def polymorphic?
@@ -170,6 +179,55 @@ module RPCMapper::Association
 
     def type
       :has_one
+    end
+
+  end
+
+
+  class HasManyThrough < HasMany
+    attr_accessor :proxy_association
+    attr_accessor :source_association
+
+    def proxy_association
+      @proxy_association ||= source_klass.defined_associations[options[:through]] ||
+        raise(
+          RPCMapper::AssociationNotFound,
+          ":has_many_through: '#{options[:through]}' is not an association on #{source_klass}"
+        )
+    end
+
+    def source_association
+      return @source_association if @source_association
+
+      klass = proxy_association.target_klass
+      @source_association = klass.defined_associations[self.id] ||
+        klass.defined_associations[self.options[:source]] ||
+        raise(
+          RPCMapper::AssociationNotFound,
+          ":has_many_through: '#{options[:source] || self.id}' is not an association on #{klass}"
+        )
+    end
+
+    def scope(object)
+      proxy_ids = proxy_association.scope(object).select(:id).collect(&:id)
+      relation = source_association.target_klass.scoped
+      relation = relation.where(source_association.foreign_key => proxy_ids)
+      if source_association.polymorphic?
+        relation = relation.where(source_association.polymorphic_type => RPCMapper::Base.base_class_name(proxy_association.target_klass))
+      end
+      relation
+    end
+
+    def target_klass
+      source_association.target_klass
+    end
+
+    def type
+      :has_many_through
+    end
+
+    def polymorphic?
+      false
     end
 
   end

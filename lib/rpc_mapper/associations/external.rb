@@ -15,7 +15,12 @@ module RPCMapper::Associations
       end
 
       def has_many(id, options={})
-        create_external_association RPCMapper::Association::HasMany.new(self, id, options)
+        klass = if options.include?(:through)
+          RPCMapper::Association::HasManyThrough
+        else
+          RPCMapper::Association::HasMany
+        end
+        create_external_association klass.new(self, id, options)
       end
 
       protected
