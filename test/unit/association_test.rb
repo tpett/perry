@@ -156,17 +156,20 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
       should "return a scope for the target class if association present" do
         record = @article.new(:id => 1)
-        assert_equal(RPCMapper::Relation, @article.defined_associations[:comments].scope(record).class)
+        assert_equal(RPCMapper::Relation,
+          @article.defined_associations[:comments].scope(record).class)
       end
 
       should "the scope should have the options for the association method" do
         record = @article.new(:id => 1)
-        assert_equal([{ :parent_id => 1 }, { :parent_type => "Article" }], @article.defined_associations[:comments].scope(record).where_values)
+        assert_equal([{ :parent_id => 1 }, { :parent_type => "Article" }],
+          @article.defined_associations[:comments].scope(record).where_values)
       end
 
       should "include base association options in the scope" do
         record = @article.new(:id => 1)
-        assert_equal "text LIKE '%awesome%'", @article.defined_associations[:awesome_comments].scope(record).where_values.first
+        assert_equal "text LIKE '%awesome%'",
+          @article.defined_associations[:awesome_comments].scope(record).where_values.first
       end
     end
 
@@ -206,34 +209,38 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
       end
 
       should "not allow polymorphic associations" do
-        association = @klass.new(@site, :comments, :through => :articles, :as => :poop)
+        association = @klass.new(@site, :comments,
+                                 :through => :articles, :as => :poop)
         assert !association.polymorphic?
       end
 
-      should "raise an AssociationNotFound exception if :through is not a defined association on class" do
+      should "raise an AssociationNotFound exception if :through is not a " +
+        "defined association on class" do
         assert_raises(RPCMapper::AssociationNotFound) do
           @klass.new(@site, :foo, :through => :bar).proxy_association
         end
       end
 
-      should "raise an AssociationNotFound exception if source association is not defined on the proxy association's class" do
+      should "raise an AssociationNotFound exception if target association " +
+        "is not defined on the proxy association's class" do
         assert_raises(RPCMapper::AssociationNotFound) do
-          @klass.new(@site, :foo, :through => :articles).source_association
+          @klass.new(@site, :foo, :through => :articles).target_association
         end
       end
 
-      should "use association name as source association name" do
+      should "use association name as target association name" do
         assert_equal(
           :comments,
           @klass.new(
             @site,
             :comments,
             :through => :articles
-          ).source_association.id
+          ).target_association.id
         )
       end
 
-      should "use :source option as source association name if provided" do
+
+      should "use :source option as target association name if provided" do
         assert_equal(
           :comments,
           @klass.new(
@@ -241,7 +248,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
             :foo_comments,
             :through => :articles,
             :source => :comments
-          ).source_association.id
+          ).target_association.id
         )
       end
 
@@ -278,37 +285,86 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
       #     has_many :comments, :through => :articles
       #   end
       #
-      # If we have articles on a site with IDs 1,2,3.  Calling site.comments would be
-      # equivalent to:
+      # If we have articles on a site with IDs 1,2,3.  Calling site.comments
+      # would be equivalent to:
       #
       #   Comment.where(:article_id => [1,2,3])
       #
-      should "scopes all primary keys in top association to source association's foreign key and includes polymorphic type" do
-        @adapter.data = { :id => 1 }
-        site = @site.first
+      context "target is 'has' association" do
 
-        # TRP: This will start :id at 1 and increment it by 1 on each request
-        @adapter.data = { :id => lambda { |prev| prev ? prev[:id] + 1 : 1 } }
-        @adapter.count = 3
-        relation = site.article_comments
-        assert_equal 2, @adapter.calls.size
+        ##
+        # This is saying the scope created for has targets should set a condition on the
+        # ``foreign_key`` attribute of the target to the value(s) from the ``primary_key``
+        # field(s) of the proxy association record(s).
+        #
+        # More concisely it should generate:
+        #
+        #   where([target_fk_attribute] => [proxy_primary_key_value(s)])
+        #
+        should "Use proxy's primary key values and target's foreign key attribute" do
+          @adapter.data = { :id => 1 }
+          site = @site.first
 
-        assert_equal(RPCMapper::Test::ExtendedBlog::Comment, relation.klass)
-        assert_equal({ :parent_id => [1,2,3] }, relation.where_values.first)
-        assert_equal({ :parent_type => "Article" }, relation.where_values.last)
+          # TRP: This will start :id at 1 and increment it by 1 on each request
+          @adapter.data = { :id => lambda { |prev| prev ? prev[:id] + 1 : 1 } }
+          @adapter.count = 3
+          relation = site.article_comments
+          assert_equal 2, @adapter.calls.size
+
+          assert_equal(RPCMapper::Test::ExtendedBlog::Comment, relation.klass)
+          assert_equal({ :parent_id => [1,2,3] }, relation.where_values.first)
+          assert_equal({ :parent_type => "Article" }, relation.where_values.last)
+        end
       end
 
-      should "should allow belongs_to as the proxy and build conditions correctly" do
-        @adapter.data = { :id => 1, :maintainer_id => 2 }
-        site = @site.first
+      context "target is 'belongs' association" do
+        ##
+        # This is saying the scope created for belongs_to targets should set a condition on the
+        # ``primary_key`` attribute of the target to the value(s) from the ``foreign_key``
+        # field(s) of the proxy association record(s).
+        #
+        # More concisely it should generate:
+        #
+        #   where([target_pk_attribute] => [proxy_foreign_key_value(s)])
+        #
+        should "Use proxy's foreign key values and target's primary key attribute" do
+          @adapter.data = { :id => 1 }
+          article = RPCMapper::Test::ExtendedBlog::Article.first
 
-        @adapter.data = { :id => 2 }
-        relation = site.maintainer_articles
+          @adapter.data = {
+            :id => lambda { |prev| prev ? prev[:id] + 1 : 1 },
+            :person_id => lambda { |prev| prev ? prev[:person_id] + 1 : 11 },
+          }
+          @adapter.count = 3
+          relation = article.comment_authors
+          assert_equal 2, @adapter.calls.size
 
-        assert_equal(RPCMapper::Test::ExtendedBlog::Article, relation.klass)
-        assert_equal({ :author_id => [2] }, relation.where_values.first)
+          assert_equal(RPCMapper::Test::ExtendedBlog::Person, relation.klass)
+          assert_equal({ :id => [11, 12, 13] }, relation.where_values.first)
+        end
+
+        should "include source_type in query if target's association is polymorphic" do
+          @adapter.data = { :id => 1 }
+          person = RPCMapper::Test::ExtendedBlog::Person.first
+
+          @adapter.data = {
+            :id => lambda { |prev| prev ? prev[:id] + 1 : 1 },
+            :parent_id => lambda { |prev| prev ? prev[:parent_id] + 1 : 11 },
+            :parent_type => "FooBar", # This should be ignored
+          }
+          @adapter.count = 3
+          relation = person.commented_articles
+          assert_equal 2, @adapter.calls.size
+
+          # It should figure this out from the :source_type option
+          assert_equal(RPCMapper::Test::ExtendedBlog::Article, relation.klass)
+          assert_equal({ :id => [11, 12, 13] }, relation.where_values.first)
+        end
       end
+
+
     end
+
 
     context "specifically the :has_one association" do
       setup do

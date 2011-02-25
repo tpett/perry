@@ -63,7 +63,9 @@ module RPCMapper::Test
       belongs_to :site, :class_name => "RPCMapper::Test::Blog::Site"
       belongs_to :author, :class_name => "RPCMapper::Test::Blog::Person"
       has_many :comments, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment"
-      has_many :awesome_comments, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment", :conditions => "text LIKE '%awesome%'"
+      has_many :comment_authors, :through => :comments, :source => :author
+      has_many :awesome_comments, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment",
+        :conditions => "text LIKE '%awesome%'"
     end
 
     class Comment < RPCMapper::Test::Base
@@ -79,6 +81,8 @@ module RPCMapper::Test
       has_many :authored_comments, :class_name => "RPCMapper::Test::Blog::Comment", :foreign_key => :person_id
       has_many :articles, :class_name => "RPCMapper::Test::Blog::Article", :foreign_key => :author_id
       has_many :comments, :as => :parent, :class_name => "RPCMapper::Test::Blog::Comment"
+      has_many :commented_articles, :through => :comments, :source => :parent,
+        :source_type => "Article"
       has_many :employees, :class_name => "RPCMapper::Test::Blog::Person", :foreign_key => :manager_id
     end
 

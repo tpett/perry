@@ -2,6 +2,20 @@ module RPCMapper::Association; end
 
 module RPCMapper::Association
 
+  ##
+  # Association::Base
+  #
+  # This is the base class for all associations.  It defines the basic structure
+  # of an association.  The basic nomenclature is as follows:
+  #
+  # Source:  The start point of the association.  The source class is the class
+  # on which the association is defined.
+  #
+  # Proxy:  On a through association the proxy is the class on which the target
+  # association lives
+  #
+  # Target:  The class that will ultimately be returned by the association
+  #
   class Base
     attr_accessor :source_klass, :id, :options
 
@@ -16,7 +30,10 @@ module RPCMapper::Association
     end
 
     def polymorphic?
-      raise NotImplementedError, "You must define how your association is polymorphic in subclasses."
+      raise(
+        NotImplementedError,
+        "You must define how your association is polymorphic in subclasses."
+      )
     end
 
     def collection?
@@ -32,10 +49,14 @@ module RPCMapper::Association
     end
 
     def target_klass(object=nil)
-      klass = if options[:polymorphic] && object
+      if options[:polymorphic] && object
+        poly_type = object.is_a?(RPCMapper::Base) ? object.send("#{id}_type") : object
+      end
+
+      klass = if poly_type
         type_string = [
           options[:polymorphic_namespace],
-          sanitize_type_attribute(object.send("#{id}_type"))
+          sanitize_type_attribute(poly_type)
         ].compact.join('::')
         begin
           eval(type_string)
@@ -46,8 +67,15 @@ module RPCMapper::Association
           )
         end
       else
-        raise(ArgumentError, ":class_name option required for association declaration.") unless options[:class_name]
-        options[:class_name] = "::#{options[:class_name]}" unless options[:class_name] =~ /^::/
+        unless options[:class_name]
+          raise(ArgumentError,
+                ":class_name option required for association declaration.")
+        end
+
+        unless options[:class_name] =~ /^::/
+          options[:class_name] = "::#{options[:class_name]}"
+        end
+
         eval(options[:class_name])
       end
 
@@ -58,9 +86,12 @@ module RPCMapper::Association
       raise NotImplementedError, "You must define scope in subclasses"
     end
 
-    # TRP: Only eager loadable if association query does not depend on instance data
+    # TRP: Only eager loadable if association query does not depend on instance
+    # data
     def eager_loadable?
-      RPCMapper::Relation::FINDER_OPTIONS.inject(true) { |condition, key| condition && !options[key].respond_to?(:call) }
+      RPCMapper::Relation::FINDER_OPTIONS.inject(true) do |condition, key|
+        condition && !options[key].respond_to?(:call)
+      end
     end
 
     protected
@@ -103,16 +134,26 @@ module RPCMapper::Association
       !!options[:polymorphic]
     end
 
+    def polymorphic_type
+      "#{id}_type".to_sym
+    end
+
+    ##
     # Returns a scope on the target containing this association
     #
-    # Builds conditions on top of the base_scope generated from any finder options set with the association
+    # Builds conditions on top of the base_scope generated from any finder
+    # options set with the association
     #
     # belongs_to :foo, :foreign_key => :foo_id
     #
-    # In addition to any finder options included with the association options the following scope will be added:
+    # In addition to any finder options included with the association options
+    # the following scope will be added:
     #  where(:id => source[:foo_id])
+    #
     def scope(object)
-      base_scope(object).where(self.primary_key => object[self.foreign_key]) if object[self.foreign_key]
+      if object[self.foreign_key]
+        base_scope(object).where(self.primary_key => object[self.foreign_key])
+      end
     end
 
   end
@@ -121,19 +162,25 @@ module RPCMapper::Association
   class Has < Base
 
     def foreign_key
-      super || (self.polymorphic? ? "#{options[:as]}_id" : "#{RPCMapper::Base.base_class_name(source_klass).downcase}_id").to_sym
+      super || if self.polymorphic?
+        "#{options[:as]}_id"
+      else
+         "#{RPCMapper::Base.base_class_name(source_klass).downcase}_id"
+      end.to_sym
     end
 
 
     ##
     # Returns a scope on the target containing this association
     #
-    # Builds conditions on top of the base_scope generated from any finder options set with the association
+    # Builds conditions on top of the base_scope generated from any finder
+    # options set with the association
     #
     #   has_many :widgets, :class_name => "Widget", :foreign_key => :widget_id
     #   has_many :comments, :as => :parent
     #
-    # In addition to any finder options included with the association options the following will be added:
+    # In addition to any finder options included with the association options
+    # the following will be added:
     #
     #   where(widget_id => source[:id])
     #
@@ -142,8 +189,12 @@ module RPCMapper::Association
     #   where(:parent_id => source[:id], :parent_type => source.class)
     #
     def scope(object)
-      s = base_scope(object).where(self.foreign_key => object[self.primary_key]) if object[self.primary_key]
-      s = s.where(polymorphic_type => RPCMapper::Base.base_class_name(object.class)) if s && polymorphic?
+      return nil unless object[self.primary_key]
+      s = base_scope(object).where(self.foreign_key => object[self.primary_key])
+      if polymorphic?
+        s = s.where(
+          polymorphic_type => RPCMapper::Base.base_class_name(object.class) )
+      end
       s
     end
 
@@ -186,40 +237,61 @@ module RPCMapper::Association
 
   class HasManyThrough < HasMany
     attr_accessor :proxy_association
-    attr_accessor :source_association
+    attr_accessor :target_association
 
     def proxy_association
       @proxy_association ||= source_klass.defined_associations[options[:through]] ||
         raise(
           RPCMapper::AssociationNotFound,
-          ":has_many_through: '#{options[:through]}' is not an association on #{source_klass}"
+          ":has_many_through: '#{options[:through]}' is not an association " +
+          "on #{source_klass}"
         )
     end
 
-    def source_association
-      return @source_association if @source_association
+    def target_association
+      return @target_association if @target_association
 
       klass = proxy_association.target_klass
-      @source_association = klass.defined_associations[self.id] ||
+      @target_association = klass.defined_associations[self.id] ||
         klass.defined_associations[self.options[:source]] ||
-        raise(
-          RPCMapper::AssociationNotFound,
-          ":has_many_through: '#{options[:source] || self.id}' is not an association on #{klass}"
+        raise(RPCMapper::AssociationNotFound,
+          ":has_many_through: '#{options[:source] || self.id}' is not an " +
+          "association on #{klass}"
         )
     end
 
     def scope(object)
-      proxy_ids = proxy_association.scope(object).select(:id).collect(&:id)
-      relation = source_association.target_klass.scoped
-      relation = relation.where(source_association.foreign_key => proxy_ids)
-      if source_association.polymorphic?
-        relation = relation.where(source_association.polymorphic_type => RPCMapper::Base.base_class_name(proxy_association.target_klass))
+      key = if target_association.is_a?(Has)
+        target_association.primary_key.to_sym
+      else
+        target_association.foreign_key.to_sym
       end
+
+      # Fetch the ids of all records on the proxy
+      proxy_ids = proxy_association.scope(object).select(key).collect(&key)
+
+      # Use these ids to build a scope on the target object
+      relation = target_association.target_klass(options[:source_type]).scoped
+      if target_association.is_a?(Has)
+        relation = relation.where(target_association.foreign_key => proxy_ids)
+      else
+        relation = relation.where(target_association.primary_key => proxy_ids)
+      end
+
+      # Add polymorphic type condition if target is polymorphic
+      # TODO: Does this work for both belongs and has polymorphic targets?
+      if target_association.polymorphic?
+        relation = relation.where(
+          target_association.polymorphic_type =>
+            RPCMapper::Base.base_class_name(proxy_association.target_klass(object))
+        )
+      end
+
       relation
     end
 
     def target_klass
-      source_association.target_klass
+      target_association.target_klass
     end
 
     def type
