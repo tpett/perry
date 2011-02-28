@@ -8,33 +8,33 @@ module RPCMapper::QueryMethods
     if block_given?
       to_a.select {|*block_args| yield(*block_args) }
     else
-      clone.tap { |r| r.select_values += args if args && !args.empty? }
+      clone.tap { |r| r.select_values += args if args_valid? args }
     end
   end
 
   def group(*args)
-    clone.tap { |r| r.group_values += args if args && !args.empty? }
+    clone.tap { |r| r.group_values += args if args_valid? args }
   end
 
   def order(*args)
-    clone.tap { |r| r.order_values += args if args && !args.empty? }
+    clone.tap { |r| r.order_values += args if args_valid? args }
   end
 
   def joins(*args)
-    clone.tap { |r| r.joins_values += args if args && !args.empty? }
+    clone.tap { |r| r.joins_values += args if args_valid?(args) }
   end
 
   def includes(*args)
     args.reject! { |a| a.nil? }
-    clone.tap { |r| r.includes_values += (r.includes_values + args).flatten.uniq if args && !args.empty? }
+    clone.tap { |r| r.includes_values += (r.includes_values + args).flatten.uniq if args_valid? args }
   end
 
   def where(*args)
-    clone.tap { |r| r.where_values += args.compact.reject(&:empty?) if args && !args.empty? }
+    clone.tap { |r| r.where_values += args.compact.select { |i| args_valid? i } if args_valid? args }
   end
 
   def having(*args)
-    clone.tap { |r| r.having_values += args if args && !args.empty? }
+    clone.tap { |r| r.having_values += args if args_valid? args }
   end
 
   def limit(value = true)
@@ -58,6 +58,12 @@ module RPCMapper::QueryMethods
 
   def sql(raw_sql)
     clone.tap { |r| r.raw_sql_value = raw_sql }
+  end
+
+  protected
+
+  def args_valid?(args)
+    args.respond_to?(:empty?) ? !args.empty? : !!args
   end
 
 end

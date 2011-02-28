@@ -214,8 +214,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
         assert !association.polymorphic?
       end
 
-      should "raise an AssociationNotFound exception if :through is not a " +
-        "defined association on class" do
+      should "raise an AssociationNotFound exception if :through is not a association on class" do
         assert_raises(RPCMapper::AssociationNotFound) do
           @klass.new(@site, :foo, :through => :bar).proxy_association
         end
@@ -267,10 +266,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
         before_count = @adapter.calls.size
         site.article_comments.all
 
-        assert_equal(
-          2,
-          @adapter.calls.size - before_count
-        )
+        assert_equal 2, @adapter.calls.size - before_count
       end
 
       ##
@@ -309,11 +305,12 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
           @adapter.data = { :id => lambda { |prev| prev ? prev[:id] + 1 : 1 } }
           @adapter.count = 3
           relation = site.article_comments
-          assert_equal 2, @adapter.calls.size
+          assert_equal 1, @adapter.calls.size
 
+          hash = relation.to_hash
           assert_equal(RPCMapper::Test::ExtendedBlog::Comment, relation.klass)
-          assert_equal({ :parent_id => [1,2,3] }, relation.where_values.first)
-          assert_equal({ :parent_type => "Article" }, relation.where_values.last)
+          assert_equal({ :parent_id => [1,2,3] }, hash[:where].first)
+          assert_equal({ :parent_type => "Article" }, hash[:where].last)
         end
       end
 
@@ -337,13 +334,14 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
           }
           @adapter.count = 3
           relation = article.comment_authors
-          assert_equal 2, @adapter.calls.size
+          assert_equal 1, @adapter.calls.size
 
+          hash = relation.to_hash
           assert_equal(RPCMapper::Test::ExtendedBlog::Person, relation.klass)
-          assert_equal({ :id => [11, 12, 13] }, relation.where_values.first)
+          assert_equal({ :id => [11, 12, 13] }, hash[:where].first)
         end
 
-        should "include source_type in query if target's association is polymorphic" do
+        should "use source_type to determine target's klass when its association is polymorphic" do
           @adapter.data = { :id => 1 }
           person = RPCMapper::Test::ExtendedBlog::Person.first
 
@@ -354,14 +352,31 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
           }
           @adapter.count = 3
           relation = person.commented_articles
-          assert_equal 2, @adapter.calls.size
+          assert_equal 1, @adapter.calls.size
 
           # It should figure this out from the :source_type option
+          hash = relation.to_hash
           assert_equal(RPCMapper::Test::ExtendedBlog::Article, relation.klass)
-          assert_equal({ :id => [11, 12, 13] }, relation.where_values.first)
+          assert_equal({ :id => [11, 12, 13] }, hash[:where].first)
         end
       end
 
+      context "when fresh scope applied" do
+        should "refresh proxy call and target call" do
+          @adapter.data = { :id => 1 }
+          site = @site.first
+
+          before_count = @adapter.calls.size
+
+          relation = site.article_comments
+
+          relation.all
+          assert_equal 2, @adapter.calls.size - before_count
+
+          relation.fresh.all
+          assert_equal 4, @adapter.calls.size - before_count
+        end
+      end
 
     end
 

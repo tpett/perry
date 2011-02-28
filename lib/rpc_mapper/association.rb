@@ -8,6 +8,9 @@ module RPCMapper::Association
   # This is the base class for all associations.  It defines the basic structure
   # of an association.  The basic nomenclature is as follows:
   #
+  # TODO: Clean up this nomenclature.  Source and Target should be switched.  From
+  # the configuration side this is already done but the internal naming is backwards.
+  #
   # Source:  The start point of the association.  The source class is the class
   # on which the association is defined.
   #
@@ -261,26 +264,37 @@ module RPCMapper::Association
     end
 
     def scope(object)
-      key = if target_association.is_a?(Has)
+      # Which attribute's values should be used on the proxy
+      key = if target_is_has?
         target_association.primary_key.to_sym
       else
         target_association.foreign_key.to_sym
       end
 
-      # Fetch the ids of all records on the proxy
-      proxy_ids = proxy_association.scope(object).select(key).collect(&key)
-
-      # Use these ids to build a scope on the target object
-      relation = target_association.target_klass(options[:source_type]).scoped
-      if target_association.is_a?(Has)
-        relation = relation.where(target_association.foreign_key => proxy_ids)
-      else
-        relation = relation.where(target_association.primary_key => proxy_ids)
+      # Fetch the ids of all records on the proxy using the correct key
+      proxy_ids = proc do
+        proxy_association.scope(object).select(key).collect(&key)
       end
 
-      # Add polymorphic type condition if target is polymorphic
-      # TODO: Does this work for both belongs and has polymorphic targets?
-      if target_association.polymorphic?
+      # Use these ids to build a scope on the target object
+      relation = target_klass.scoped
+
+      if target_is_has?
+        relation = relation.where(
+          proc do
+            { target_association.foreign_key => proxy_ids.call }
+          end
+        )
+      else
+        relation = relation.where(
+          proc do
+            { target_association.primary_key => proxy_ids.call }
+          end
+        )
+      end
+
+      # Add polymorphic type condition if target is polymorphic and has
+      if target_association.polymorphic? && target_is_has?
         relation = relation.where(
           target_association.polymorphic_type =>
             RPCMapper::Base.base_class_name(proxy_association.target_klass(object))
@@ -291,7 +305,15 @@ module RPCMapper::Association
     end
 
     def target_klass
-      target_association.target_klass
+      target_association.target_klass(options[:source_type])
+    end
+
+    def target_type
+      target_association.type
+    end
+
+    def target_is_has?
+      target_association.is_a?(Has)
     end
 
     def type

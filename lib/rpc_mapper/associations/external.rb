@@ -32,11 +32,13 @@ module RPCMapper::Associations
         define_method(association.id) do
           cached_value = instance_variable_get(cache_ivar)
 
-          # TRP: Logic for actually pulling setting the value
+          # TRP: Logic for actually pulling & setting the value
           unless cached_value
             scoped = association.scope(self)
 
-            cached_value = association.collection? ? scoped : scoped.first if scoped && !scoped.where_values.empty?
+            if scoped && !scoped.where_values.empty?
+              cached_value = association.collection? ? scoped : scoped.first
+            end
 
             instance_variable_set(cache_ivar, cached_value)
           end

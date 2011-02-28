@@ -92,6 +92,22 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
         assert_equal [:where], hash.keys
       end
 
+      should "call any procs set on value methods to allow delayed execution" do
+        @all_methods.each do |method|
+          @relation = @relation.send(method, proc { "#{method}_val" })
+        end
+
+        hash = @relation.to_hash
+
+        hash.each do |key, value|
+          if value.is_a?(Array)
+            assert value.inject(true) { |sum, v| sum && !v.is_a?(Proc) }
+          else
+            assert !value.is_a?(Proc)
+          end
+        end
+      end
+
       should "remove all select values if one ends in '*'" do
         assert_equal %w(foo), @relation.select('foo').to_hash[:select]
         assert_equal %w(foo *bar), @relation.select('foo').select('*bar').to_hash[:select]
@@ -258,6 +274,7 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
     end
 
     context "search method" do
+      # TODO: Pull this code out of this gem and
     end
 
     context "apply_finder_options method" do

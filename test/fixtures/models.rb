@@ -84,6 +84,8 @@ module RPCMapper::Test
       has_many :commented_articles, :through => :comments, :source => :parent,
         :source_type => "Article"
       has_many :employees, :class_name => "RPCMapper::Test::Blog::Person", :foreign_key => :manager_id
+      has_many :sites, :class_name => "RPCMapper::Test::Blog::Site", :foreign_key => :maintainer_id
+      has_many :site_comments, :through => :sites, :source => :comments
     end
 
   end

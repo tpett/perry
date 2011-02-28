@@ -46,17 +46,20 @@ class RPCMapper::Relation
     else
       hash = SINGLE_VALUE_METHODS.inject({}) do |h, option|
         value = self.send("#{option}_value")
+        value = call_procs(value)
         value ? h.merge(option => value) : h
       end
 
       hash.merge!((MULTI_VALUE_METHODS - [:select]).inject({}) do |h, option|
         value = self.send("#{option}_values")
+        value = call_procs(value)
         value && !value.empty? ? h.merge(option => value.uniq) : h
       end)
 
       # TRP: If one of the select options contains a * than select options are ignored
       if select_values && !select_values.empty? && !select_values.any? { |val| val.to_s.match(/\*$/) }
-        hash.merge!(:select => select_values.uniq)
+        value = call_procs(select_values)
+        hash.merge!(:select => value.uniq)
       end
 
       hash
@@ -132,6 +135,19 @@ class RPCMapper::Relation
 
   def fetch_records
     @klass.send(:fetch_records, self)
+  end
+
+  private
+
+  def call_procs(values)
+    case values
+    when Array:
+      values.collect { |v| v.is_a?(Proc) ? v.call : v }
+    when Proc:
+      values.call
+    else
+      values
+    end
   end
 
 end
