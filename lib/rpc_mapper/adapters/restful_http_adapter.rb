@@ -78,7 +78,7 @@ module RPCMapper::Adapters
 
         params
       else
-        @attributes
+        object.attributes
       end
     end
 
