@@ -65,6 +65,69 @@ class RPCMapper::AbstractAdapterTest < Test::Unit::TestCase
       end
     end
 
+    context "call instnace method" do
+
+      should "take two arguments" do
+        assert_equal 2, @abstract.instance_method('call').arity
+      end
+
+      should "call each middleware in order followed by the mode method" do
+        class FakeMiddleware
+          @@output = []
+          def initialize(adapter, config={})
+            @adapter = adapter
+            @config = config
+          end
+
+          def call(options)
+            @@output << [self.class.name.split('::').last, @config, options]
+            @adapter.call(options)
+          end
+
+          def self.log(msg=nil)
+            if msg
+              @@output << log
+            else
+              @@output
+            end
+          end
+        end
+        class MiddlewareA < FakeMiddleware; end
+        class MiddlewareB < FakeMiddleware; end
+
+        class Foo < @abstract
+          register_as :foo
+
+          def read(options)
+            FakeMiddleware.log << ["read", options]
+            []
+          end
+        end
+
+        config = proc do |config|
+          config.add_middleware(MiddlewareA, :foo => 'A')
+          config.add_middleware(MiddlewareB, :foo => 'B')
+        end
+
+        adapter = Foo.new(:foo, config)
+
+        adapter.call('read', { :object => 'Baz'})
+
+        correct = [
+          [ "MiddlewareA", { :foo => 'A' }, { :object => 'Baz' } ],
+          [ "MiddlewareB", { :foo => 'B' }, { :object => 'Baz' } ],
+          [ "read", { :object => 'Baz'} ]
+        ]
+
+        assert_equal(correct, FakeMiddleware.log)
+
+        adapter.call('read', { :object => 'Baz'})
+
+        assert_equal(correct + correct, FakeMiddleware.log)
+      end
+
+    end
+
     context "configuration in hash or AdapterConfig" do
       setup do
         class Foo < @abstract

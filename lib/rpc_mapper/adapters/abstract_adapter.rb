@@ -27,6 +27,18 @@ module RPCMapper::Adapters
       @config ||= build_configuration
     end
 
+    def call(mode, options)
+      @stack ||= self.middlewares.reverse.inject(self.method(mode)) do |below, (above_klass, above_config)|
+        above_klass.new(below, above_config)
+      end
+
+      @stack.call(options)
+    end
+
+    def middlewares
+      self.config[:middlewares] || []
+    end
+
     def read(options)
       raise(NotImplementedError,
             "You must not use the abstract adapter.  Implement an adapter that extends the " +
