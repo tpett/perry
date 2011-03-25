@@ -14,12 +14,13 @@ module RPCMapper::Adapters
     end
 
     def self.create(type, config)
-      klass = type ? @@registered_adapters[type.to_sym] : self
+      klass = @@registered_adapters[type.to_sym]
       klass.new(type, config)
     end
 
     def extend_adapter(config)
-      self.class.create(self.type, @configuration_contexts + [*config])
+      config = config.is_a?(Array) ? config : [config]
+      self.class.create(self.type, @configuration_contexts + config)
     end
 
     def config
@@ -27,15 +28,21 @@ module RPCMapper::Adapters
     end
 
     def read(options)
-      raise NotImplementedError, "You must not use the abstract adapter.  Implement an adapter that extends the RPCMapper::Adapters::Abstract::Base class and overrides this method."
+      raise(NotImplementedError,
+            "You must not use the abstract adapter.  Implement an adapter that extends the " +
+            "RPCMapper::Adapters::AbstractAdapter class and overrides this method.")
     end
 
     def write(object)
-      raise NotImplementedError, "You must not use the abstract adapter.  Implement an adapter that extends the RPCMapper::Adapters::Abstract::Base class and overrides this method."
+      raise(NotImplementedError,
+            "You must not use the abstract adapter.  Implement an adapter that extends the " +
+            "RPCMapper::Adapters::AbstractAdapter class and overrides this method.")
     end
 
     def delete(object)
-      raise NotImplementedError, "You must not use the abstract adapter.  Implement an adapter that extends the RPCMapper::Adapters::Abstract::Base class and overrides this method."
+      raise(NotImplementedError,
+            "You must not use the abstract adapter.  Implement an adapter that extends the " +
+            "RPCMapper::Adapters::AbstractAdapter class and overrides this method.")
     end
 
     def self.register_as(name)
@@ -46,10 +53,28 @@ module RPCMapper::Adapters
 
     # TRP: Run each configure block in order of class hierarchy / definition and merge the results.
     def build_configuration
-      @configuration_contexts.collect do |config_block|
-        config_block.is_a?(Hash) ? config_block : OpenStruct.new.tap { |os| config_block.call(os) }.marshal_dump
-      end.inject({}) { |sum, config| sum.merge(config) }
+      @configuration_contexts.inject({}) do |sum, config|
+        if config.is_a?(Hash)
+          sum.merge(config)
+        else
+          AdapterConfig.new(sum).tap { |ac| config.call(ac) }.marshal_dump
+        end
+      end
+    end
+
+    class AdapterConfig < OpenStruct
+
+      def add_middleware(klass, config={})
+        self.middlewares ||= []
+        self.middlewares << [klass, config]
+      end
+
+      def to_hash
+        marshal_dump
+      end
+
     end
 
   end
 end
+

@@ -20,7 +20,8 @@ class RPCMapper::Base
   attr_accessor :attributes, :new_record, :read_options, :write_options
   alias :new_record? :new_record
 
-  class_inheritable_accessor :read_adapter, :write_adapter, :cacheable, :defined_attributes, :scoped_methods, :defined_associations
+  class_inheritable_accessor :read_adapter, :write_adapter, :cacheable,
+    :defined_attributes, :scoped_methods, :defined_associations
 
   self.cacheable = false
   self.defined_associations = {}
@@ -37,14 +38,17 @@ class RPCMapper::Base
 
   protected
 
-  # TRP: Common interface for setting attributes to keep things consistent; if force is true the defined_attributes list will be ignored
+  # TRP: Common interface for setting attributes to keep things consistent; if
+  # force is true the defined_attributes list will be ignored
   def set_attributes(attributes, force=false)
     attributes = attributes.inject({}) do |options, (key, value)|
       options[key.to_s] = value
       options
     end
     @attributes = {} if @attributes.nil?
-    @attributes.merge!(attributes.reject { |field, value| !self.defined_attributes.include?(field) && !force })
+    @attributes.merge!(attributes.reject { |field, value|
+      !self.defined_attributes.include?(field) && !force
+    })
   end
 
   def set_attribute(attribute, value, force=false)
@@ -56,7 +60,8 @@ class RPCMapper::Base
     public
 
     delegate :find, :first, :all, :search, :apply_finder_options, :to => :scoped
-    delegate :select, :group, :order, :joins, :where, :having, :limit, :offset, :from, :fresh, :to => :scoped
+    delegate :select, :group, :order, :joins, :where, :having, :limit, :offset,
+      :from, :fresh, :to => :scoped
 
     def new_from_data_store(hash)
       if hash.nil?

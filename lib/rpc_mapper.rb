@@ -45,3 +45,4 @@ module RPCMapper
 end
 
 require 'rpc_mapper/base'
+

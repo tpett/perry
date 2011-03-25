@@ -7,11 +7,15 @@ module RPCMapper::Adapters
     @@service_pool ||= {}
 
     def service
-      @@service_pool["#{config[:host]}:#{config[:port]}"] ||= BERTRPC::Service.new(self.config[:host], self.config[:port])
+      @@service_pool["#{config[:host]}:#{config[:port]}"] ||=
+          BERTRPC::Service.new(self.config[:host], self.config[:port])
     end
 
     def read(options)
-      log(options, "RPC #{config[:service]}") { self.service.call.send(self.namespace).send(self.service_name, options.merge(config[:default_options] || {})) }
+      log(options, "RPC #{config[:service]}") {
+        self.service.call.send(self.namespace).send(self.service_name,
+                                                    options.merge(config[:default_options] || {}))
+      }
     end
 
     protected
