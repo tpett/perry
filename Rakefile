@@ -2,20 +2,20 @@ require 'rubygems'
 require 'rake/gempackagetask'
 require 'rake/testtask'
 
-require 'lib/rpc_mapper/version'
+require 'lib/perry/version'
 
 spec = Gem::Specification.new do |s|
-  s.name             = 'rpc-mapper'
-  s.version          = RPCMapper::Version.to_s
+  s.name             = 'perry'
+  s.version          = Perry::Version.to_s
   s.has_rdoc         = true
   s.extra_rdoc_files = %w(README.rdoc)
   s.rdoc_options     = %w(--main README.rdoc)
-  s.summary          = "Ruby library for querying and mapping data over RPC"
+  s.summary          = "Ruby library for querying and mapping data through generic interfaces"
   s.author           = 'Travis Petticrew'
   s.email            = 'bobo@petticrew.net'
-  s.homepage         = 'http://github.com/tpett/rpc-mapper'
+  s.homepage         = 'http://github.com/tpett/perry'
   s.files            = %w(README.rdoc Rakefile) + Dir.glob("{lib}/**/*")
-  # s.executables    = ['rpc-mapper']
+  # s.executables    = ['perry']
 
   s.add_development_dependency("shoulda", [">= 2.10.0"])
   s.add_development_dependency("leftright", [">= 0.0.6"])

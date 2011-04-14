@@ -1,7 +1,7 @@
 autoload :BERTRPC, 'bertrpc'
 
-module RPCMapper::Adapters
-  class BERTRPCAdapter < RPCMapper::Adapters::AbstractAdapter
+module Perry::Adapters
+  class BERTRPCAdapter < Perry::Adapters::AbstractAdapter
     register_as :bertrpc
 
     @@service_pool ||= {}

@@ -1,29 +1,29 @@
-module RPCMapper
+module Perry
 
-  # Generic RPCMapper error
+  # Generic Perry error
   #
-  class RPCMapperError < StandardError
+  class PerryError < StandardError
   end
 
-  # Raised when RPCMapper cannot find records from a given id or set of ids
+  # Raised when Perry cannot find records from a given id or set of ids
   #
-  class RecordNotFound < RPCMapperError
+  class RecordNotFound < PerryError
   end
 
-  # Raised when RPCMapper cannot save a record through the write_adapter
+  # Raised when Perry cannot save a record through the write_adapter
   # and save! or update_attributes! was used
   #
-  class RecordNotSaved < RPCMapperError
+  class RecordNotSaved < PerryError
   end
 
   # Used for all association related errors
   #
-  class AssociationError < RPCMapperError
+  class AssociationError < PerryError
   end
 
   # Raised when trying to eager load an association that relies on instance
   # level data.
-  # class Article < RPCMapper::Base
+  # class Article < Perry::Base
   #   has_many :comments, :conditions => lambda { |article| ... }
   # end
   #

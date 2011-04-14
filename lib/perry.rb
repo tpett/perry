@@ -15,10 +15,10 @@ autoload :Benchmark, 'benchmark'
 
 require 'ostruct'
 
-# TRP: RPCMapper core_ext
-require 'rpc_mapper/core_ext/kernel/singleton_class'
+# TRP: Perry core_ext
+require 'perry/core_ext/kernel/singleton_class'
 
-module RPCMapper
+module Perry
   @@log_file = nil
 
   def self.logger
@@ -44,5 +44,5 @@ module RPCMapper
 
 end
 
-require 'rpc_mapper/base'
+require 'perry/base'
 

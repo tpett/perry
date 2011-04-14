@@ -1,4 +1,4 @@
-module RPCMapper::Persistence
+module Perry::Persistence
 
   module ClassMethods
 
@@ -28,7 +28,7 @@ module RPCMapper::Persistence
     end
 
     def save!
-      save or raise RPCMapper::RecordNotSaved
+      save or raise Perry::RecordNotSaved
     end
 
     def update_attributes(attributes)
@@ -37,7 +37,7 @@ module RPCMapper::Persistence
     end
 
     def update_attributes!(attributes)
-      update_attributes(attributes) or raise RPCMapper::RecordNotSaved
+      update_attributes(attributes) or raise Perry::RecordNotSaved
     end
 
     def destroy

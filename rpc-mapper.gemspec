@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = %q{rpc-mapper}
+  s.name = %q{perry}
   s.version = "0.2.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
@@ -9,8 +9,8 @@ Gem::Specification.new do |s|
   s.date = %q{2010-12-03}
   s.email = %q{bobo@petticrew.net}
   s.extra_rdoc_files = ["README.rdoc"]
-  s.files = ["README.rdoc", "Rakefile", "lib/rpc_mapper", "lib/rpc_mapper/adapters", "lib/rpc_mapper/adapters/abstract_adapter.rb", "lib/rpc_mapper/adapters/bertrpc_adapter.rb", "lib/rpc_mapper/adapters/restful_http_adapter.rb", "lib/rpc_mapper/adapters.rb", "lib/rpc_mapper/association.rb", "lib/rpc_mapper/association_preload.rb", "lib/rpc_mapper/associations", "lib/rpc_mapper/associations/common.rb", "lib/rpc_mapper/associations/contains.rb", "lib/rpc_mapper/associations/external.rb", "lib/rpc_mapper/base.rb", "lib/rpc_mapper/cacheable", "lib/rpc_mapper/cacheable/entry.rb", "lib/rpc_mapper/cacheable/store.rb", "lib/rpc_mapper/cacheable.rb", "lib/rpc_mapper/core_ext", "lib/rpc_mapper/core_ext/kernel", "lib/rpc_mapper/core_ext/kernel/singleton_class.rb", "lib/rpc_mapper/errors.rb", "lib/rpc_mapper/logger.rb", "lib/rpc_mapper/persistence.rb", "lib/rpc_mapper/relation", "lib/rpc_mapper/relation/finder_methods.rb", "lib/rpc_mapper/relation/query_methods.rb", "lib/rpc_mapper/relation.rb", "lib/rpc_mapper/scopes", "lib/rpc_mapper/scopes/conditions.rb", "lib/rpc_mapper/scopes.rb", "lib/rpc_mapper/serialization.rb", "lib/rpc_mapper/version.rb", "lib/rpc_mapper.rb"]
-  s.homepage = %q{http://github.com/tpett/rpc-mapper}
+  s.files = ["README.rdoc", "Rakefile", "lib/perry", "lib/perry/adapters", "lib/perry/adapters/abstract_adapter.rb", "lib/perry/adapters/bertrpc_adapter.rb", "lib/perry/adapters/restful_http_adapter.rb", "lib/perry/adapters.rb", "lib/perry/association.rb", "lib/perry/association_preload.rb", "lib/perry/associations", "lib/perry/associations/common.rb", "lib/perry/associations/contains.rb", "lib/perry/associations/external.rb", "lib/perry/base.rb", "lib/perry/cacheable", "lib/perry/cacheable/entry.rb", "lib/perry/cacheable/store.rb", "lib/perry/cacheable.rb", "lib/perry/core_ext", "lib/perry/core_ext/kernel", "lib/perry/core_ext/kernel/singleton_class.rb", "lib/perry/errors.rb", "lib/perry/logger.rb", "lib/perry/persistence.rb", "lib/perry/relation", "lib/perry/relation/finder_methods.rb", "lib/perry/relation/query_methods.rb", "lib/perry/relation.rb", "lib/perry/scopes", "lib/perry/scopes/conditions.rb", "lib/perry/scopes.rb", "lib/perry/serialization.rb", "lib/perry/version.rb", "lib/perry.rb"]
+  s.homepage = %q{http://github.com/tpett/perry}
   s.rdoc_options = ["--main", "README.rdoc"]
   s.require_paths = ["lib"]
   s.rubygems_version = %q{1.3.7}

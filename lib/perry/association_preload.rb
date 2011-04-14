@@ -1,4 +1,4 @@
-module RPCMapper::AssociationPreload
+module Perry::AssociationPreload
   module ClassMethods
 
     def eager_load_associations(original_results, relation)
@@ -8,14 +8,14 @@ module RPCMapper::AssociationPreload
 
         unless association
           raise(
-            RPCMapper::AssociationNotFound,
+            Perry::AssociationNotFound,
             "no such association (#{association_id})"
           )
         end
 
         unless association.eager_loadable?
           raise(
-            RPCMapper::AssociationPreloadNotSupported,
+            Perry::AssociationPreloadNotSupported,
             "delayed execution options (block options) cannot be used for eager loaded associations"
           )
         end

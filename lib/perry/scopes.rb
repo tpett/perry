@@ -1,6 +1,6 @@
-require 'rpc_mapper/scopes/conditions'
+require 'perry/scopes/conditions'
 
-module RPCMapper::Scopes
+module Perry::Scopes
   
   module ClassMethods
     

@@ -1,6 +1,6 @@
 require 'yaml'
 
-module RPCMapper::Serialization
+module Perry::Serialization
 
   module ClassMethods
 

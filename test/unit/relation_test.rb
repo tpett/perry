@@ -1,12 +1,12 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 
-class RPCMapper::RelationTest < Test::Unit::TestCase
+class Perry::RelationTest < Test::Unit::TestCase
   SINGLE_VALUE_METHODS = [:limit, :offset, :from, :fresh]
   MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :where, :having, :includes]
 
-  context "RPCMapper::Relation class" do
+  context "Perry::Relation class" do
     setup do
-      @model = Class.new(RPCMapper::Test::Base)
+      @model = Class.new(Perry::Test::Base)
       @relation = @model.send(:relation)
       @model.class_eval do
         scope :foo, where('foo')
@@ -200,7 +200,7 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
 
       should "return an object or nil if nothing matched" do
         @adapter.data = { :id => 1 }
-        assert_kind_of RPCMapper::Base, @relation.first
+        assert_kind_of Perry::Base, @relation.first
       end
     end
 
@@ -227,7 +227,7 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
 
       should "accept :first with finder options" do
         @adapter.data = { :id => 1 }
-        assert_kind_of RPCMapper::Base, @relation.find(:first, :conditions => 'test')
+        assert_kind_of Perry::Base, @relation.find(:first, :conditions => 'test')
         assert_equal ['test'], @adapter.last_call.last[:where]
       end
 
@@ -236,12 +236,12 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
         assert_raises(ArgumentError) { @relation.find({}) }
       end
 
-      should "raise RPCMapper::RecordNotFound when id passed and record could not be found" do
-        assert_raises(RPCMapper::RecordNotFound) { @relation.find(1) }
+      should "raise Perry::RecordNotFound when id passed and record could not be found" do
+        assert_raises(Perry::RecordNotFound) { @relation.find(1) }
       end
 
-      should "raise RPCMapper::RecordNotFound when a set of ids is passed and any record could not be found" do
-        assert_raises(RPCMapper::RecordNotFound) { @relation.find([1,2,3]) }
+      should "raise Perry::RecordNotFound when a set of ids is passed and any record could not be found" do
+        assert_raises(Perry::RecordNotFound) { @relation.find([1,2,3]) }
       end
     end
 
@@ -312,7 +312,7 @@ class RPCMapper::RelationTest < Test::Unit::TestCase
     #-----------------------------------------
     context "select query method" do
       should "delegate to array if block is passed" do
-        assert_kind_of(RPCMapper::Relation, @relation.select('foo'))
+        assert_kind_of(Perry::Relation, @relation.select('foo'))
         assert_kind_of(Array, @relation.select {})
       end
     end

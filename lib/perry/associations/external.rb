@@ -1,24 +1,24 @@
-require 'rpc_mapper/associations/common'
-require 'rpc_mapper/association'
+require 'perry/associations/common'
+require 'perry/association'
 
-module RPCMapper::Associations
+module Perry::Associations
 
   module External
     module ClassMethods
 
       def belongs_to(id, options={})
-        create_external_association RPCMapper::Association::BelongsTo.new(self, id, options)
+        create_external_association Perry::Association::BelongsTo.new(self, id, options)
       end
 
       def has_one(id, options={})
-        create_external_association RPCMapper::Association::HasOne.new(self, id, options)
+        create_external_association Perry::Association::HasOne.new(self, id, options)
       end
 
       def has_many(id, options={})
         klass = if options.include?(:through)
-          RPCMapper::Association::HasManyThrough
+          Perry::Association::HasManyThrough
         else
-          RPCMapper::Association::HasMany
+          Perry::Association::HasMany
         end
         create_external_association klass.new(self, id, options)
       end
@@ -58,7 +58,7 @@ module RPCMapper::Associations
     end
 
     def self.included(receiver)
-      receiver.send :include, RPCMapper::Associations::Common
+      receiver.send :include, Perry::Associations::Common
       receiver.extend         ClassMethods
       receiver.send :include, InstanceMethods
     end

@@ -1,12 +1,12 @@
-module RPCMapper::FinderMethods
+module Perry::FinderMethods
 
   def find(ids_or_mode, options={})
     case ids_or_mode
     when Fixnum, String
-      self.where(:id => ids_or_mode.to_i).first(options) || raise(RPCMapper::RecordNotFound, "Could not find #{@klass} with :id = #{ids_or_mode}")
+      self.where(:id => ids_or_mode.to_i).first(options) || raise(Perry::RecordNotFound, "Could not find #{@klass} with :id = #{ids_or_mode}")
     when Array
       self.where(:id => ids_or_mode).all(options).tap do |result|
-        raise RPCMapper::RecordNotFound, "Couldn't find all #{@klass} with ids (#{ids_or_mode.join(',')}) (expected #{ids_or_mode.size} records but got #{result.size})." unless result.size == ids_or_mode.size
+        raise Perry::RecordNotFound, "Couldn't find all #{@klass} with ids (#{ids_or_mode.join(',')}) (expected #{ids_or_mode.size} records but got #{result.size})." unless result.size == ids_or_mode.size
       end
     when :all
       self.all(options)

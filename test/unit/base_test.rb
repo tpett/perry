@@ -1,10 +1,10 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 
-class RPCMapper::BaseTest < Test::Unit::TestCase
+class Perry::BaseTest < Test::Unit::TestCase
 
-  context "BertMapper::Base class" do
+  context "Perry::Base class" do
     setup do
-      @model = Class.new(RPCMapper::Test::Base)
+      @model = Class.new(Perry::Test::Base)
       @adapter = @model.send(:read_adapter)
       # TRP: Block all Net::HTTP requests
       FakeWeb.allow_net_connect = false
@@ -49,12 +49,12 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
         end
       end
 
-      should "require bert_mapper/persistence if needed" do
-        assert defined?(RPCMapper::Persistence)
+      should "require perry/persistence if needed" do
+        assert defined?(Perry::Persistence)
       end
 
-      should "include RPCMapper::Mutable module" do
-        assert @model.ancestors.include?(RPCMapper::Persistence)
+      should "include Perry::Mutable module" do
+        assert @model.ancestors.include?(Perry::Persistence)
       end
 
       should "define writers for attributes that have been declared" do
@@ -75,8 +75,8 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
         @model.send(:configure_cacheable, :expires => @expires, :record_count_threshold => 5)
       end
 
-      should "include RPCMapper::Cacheable module" do
-        assert @model.ancestors.include?(RPCMapper::Cacheable)
+      should "include Perry::Cacheable module" do
+        assert @model.ancestors.include?(Perry::Cacheable)
       end
 
       should "set configuration vars" do
@@ -94,7 +94,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
     context "new_from_data_store method" do
       setup do
         @attributes = Factory(:widget)
-        @widget = RPCMapper::Test::Wearhouse::Widget.new_from_data_store(@attributes)
+        @widget = Perry::Test::Wearhouse::Widget.new_from_data_store(@attributes)
       end
 
       should "instantiate a new object from hash" do
@@ -108,7 +108,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
       end
 
       should "return nil when nil is passed in" do
-        assert_nil RPCMapper::Test::Wearhouse::Widget.new_from_data_store(nil)
+        assert_nil Perry::Test::Wearhouse::Widget.new_from_data_store(nil)
       end
     end
 
@@ -198,8 +198,8 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
 
     end
 
-    COMPARISON_COND = RPCMapper::Scopes::Conditions::COMPARISON_CONDITIONS
-    WILDCARD_COND   = RPCMapper::Scopes::Conditions::WILDCARD_CONDITIONS
+    COMPARISON_COND = Perry::Scopes::Conditions::COMPARISON_CONDITIONS
+    WILDCARD_COND   = Perry::Scopes::Conditions::WILDCARD_CONDITIONS
     context "dynamic condition scopes" do
       setup do
         @model.send :attributes, :a, :b, :c
@@ -218,7 +218,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
           end
 
           should "return a relation when a_#{method} called" do
-            assert_kind_of RPCMapper::Relation, @model.send("a_#{method}", 'foo')
+            assert_kind_of Perry::Relation, @model.send("a_#{method}", 'foo')
           end
 
           should "set a where condition for a_#{method}" do
@@ -377,8 +377,8 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
 
       should "raise exception if save! or update_attributes! called and failed" do
         @object.write_adapter.writes_return false
-        assert_raises(RPCMapper::RecordNotSaved) { @object.save! }
-        assert_raises(RPCMapper::RecordNotSaved) { @object.update_attributes!({}) }
+        assert_raises(Perry::RecordNotSaved) { @object.save! }
+        assert_raises(Perry::RecordNotSaved) { @object.update_attributes!({}) }
       end
 
     end
@@ -420,23 +420,23 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
 
     context "klass_from_association_options method" do
       setup do
-        @comment = RPCMapper::Test::Blog::Comment.new(:parent_type => "Article")
+        @comment = Perry::Test::Blog::Comment.new(:parent_type => "Article")
         @subject_on_comment = lambda do |association|
-          @comment.send(:klass_from_association_options, association.to_sym, RPCMapper::Test::Blog::Comment.defined_associations[association.to_sym].options.dup)
+          @comment.send(:klass_from_association_options, association.to_sym, Perry::Test::Blog::Comment.defined_associations[association.to_sym].options.dup)
         end
       end
 
       should "use extended class when present on a non-polymorphic association" do
-        assert_equal RPCMapper::Test::ExtendedBlog::Person, @subject_on_comment.call(:author)
+        assert_equal Perry::Test::ExtendedBlog::Person, @subject_on_comment.call(:author)
       end
 
       should "use extended class when present on a polymorphic association" do
-        assert_equal RPCMapper::Test::ExtendedBlog::Article, @subject_on_comment.call(:parent)
+        assert_equal Perry::Test::ExtendedBlog::Article, @subject_on_comment.call(:parent)
       end
 
       should "not use extended class when has a different name" do
-        @comment = RPCMapper::Test::Blog::Comment.new(:parent_type => "Site")
-        assert_equal RPCMapper::Test::Blog::Site, @subject_on_comment.call(:parent)
+        @comment = Perry::Test::Blog::Comment.new(:parent_type => "Site")
+        assert_equal Perry::Test::Blog::Site, @subject_on_comment.call(:parent)
       end
 
     end
@@ -444,7 +444,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
     context 'has external associations' do
       setup do
         @adapter.data = { :id => 1 }
-        @site = RPCMapper::Test::Blog::Site.first
+        @site = Perry::Test::Blog::Site.first
         @adapter.reset
       end
 
@@ -457,7 +457,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
 
       should "use foreign_key when passed" do
         @adapter.data = { :person_id => 2 }
-        @comment = RPCMapper::Test::Blog::Comment.first
+        @comment = Perry::Test::Blog::Comment.first
         @comment.author
         assert_equal [{ :id => 2 }], @adapter.last_call.last[:where]
       end
@@ -466,12 +466,12 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
     context 'has_many external associations' do
       setup do
         @adapter.data = { :id => 1 }
-        @site = RPCMapper::Test::Blog::Site.first
+        @site = Perry::Test::Blog::Site.first
         @adapter.reset
       end
 
       should "return a relation" do
-        assert_equal RPCMapper::Relation, @site.articles.class
+        assert_equal Perry::Relation, @site.articles.class
       end
 
       should "add proper :where conditions for remote model" do
@@ -493,13 +493,13 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
     context "has_one external association" do
       setup do
         @adapter.data = { :id => 1, :maintainer_id => 1 }
-        @site = RPCMapper::Test::Blog::Site.first
+        @site = Perry::Test::Blog::Site.first
         @adapter.reset
       end
 
       should "return a single object" do
         @adapter.data = { :id => 1 }
-        assert_kind_of RPCMapper::Base, @site.maintainer
+        assert_kind_of Perry::Base, @site.maintainer
       end
 
       should "add proper :where conditions for remote model" do
@@ -524,7 +524,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
     context "belongs_to external association" do
       setup do
         @adapter.data = { :author_id => 1 }
-        @article = RPCMapper::Test::Blog::Article.first
+        @article = Perry::Test::Blog::Article.first
         @adapter.reset
       end
 
@@ -535,7 +535,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
 
       should "return a single object" do
         @adapter.data = { :id => 1 }
-        assert_kind_of RPCMapper::Base, @article.author
+        assert_kind_of Perry::Base, @article.author
       end
     end
 
@@ -544,7 +544,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
         @subwidgets = (1..5).collect { Factory(:subwidget).tap { |hsh| hsh.each_key { |k| hsh[k.to_s] = hsh.delete(k) } } }
         @schematic = Factory(:schematic).tap { |hsh| hsh.each_key { |k| hsh[k.to_s] = hsh.delete(k) } }
         @adapter.data = Factory(:widget).merge(:subwidgets => @subwidgets, :schematic => @schematic)
-        @widget = RPCMapper::Test::Wearhouse::Widget.first
+        @widget = Perry::Test::Wearhouse::Widget.first
       end
 
       context "contains_one association" do
@@ -554,7 +554,7 @@ class RPCMapper::BaseTest < Test::Unit::TestCase
         end
 
         should "use the extended version of the associated class if available" do
-          assert_kind_of RPCMapper::Test::ExtendedWearhouse::Schematic, @widget.schematic
+          assert_kind_of Perry::Test::ExtendedWearhouse::Schematic, @widget.schematic
         end
       end
 

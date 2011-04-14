@@ -1,11 +1,11 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 
-class RPCMapper::AssociationTest < Test::Unit::TestCase
+class Perry::AssociationTest < Test::Unit::TestCase
 
   context "generic association" do
     setup do
-      @klass = RPCMapper::Association::Base
-      @model = Class.new(RPCMapper::Base)
+      @klass = Perry::Association::Base
+      @model = Class.new(Perry::Base)
       @association = @klass.new(@model, "foo")
     end
 
@@ -15,7 +15,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
       end
 
       should "return false if a block is used for the param of any finder option" do
-        RPCMapper::Relation::FINDER_OPTIONS.each do |option|
+        Perry::Relation::FINDER_OPTIONS.each do |option|
           assert !@klass.new(@model, 'bar', option => lambda {}).eager_loadable?
         end
       end
@@ -26,28 +26,28 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
       #should "not return extensions of the class if the extended class name is not the same" # Covered by next test
       should "return the class specified by :class_name option" do
-        assert_equal RPCMapper::Test::Blog::Site, RPCMapper::Test::Blog::Article.defined_associations[:site].target_klass
+        assert_equal Perry::Test::Blog::Site, Perry::Test::Blog::Article.defined_associations[:site].target_klass
       end
 
       should "return the latest extension of the specified class if the extended class is of the same name" do
-        assert_equal RPCMapper::Test::ExtendedBlog::Article, RPCMapper::Test::Blog::Site.defined_associations[:articles].target_klass
+        assert_equal Perry::Test::ExtendedBlog::Article, Perry::Test::Blog::Site.defined_associations[:articles].target_klass
       end
 
       #should "use the :polymorphic_namespace if given as an option" # Covered by next test
       should "use the optional object parameter's polymorphic _type attribute to determine the class if :polymorphic is true" do
-        comment = RPCMapper::Test::Blog::Comment.new(:parent_type => "Site")
-        assert_equal RPCMapper::Test::Blog::Site, comment.class.defined_associations[:parent].target_klass(comment)
+        comment = Perry::Test::Blog::Comment.new(:parent_type => "Site")
+        assert_equal Perry::Test::Blog::Site, comment.class.defined_associations[:parent].target_klass(comment)
       end
 
       should "sanitize malicious values in _type column" do
-        comment = RPCMapper::Test::Blog::Comment.new(:parent_type => "Site;::UHOH = true")
+        comment = Perry::Test::Blog::Comment.new(:parent_type => "Site;::UHOH = true")
         comment.class.defined_associations[:parent].target_klass(comment)
         assert_raises(NameError) { UHOH }
       end
 
       should "raise PolymorphicAssociationTypeError for missing types" do
-        comment = RPCMapper::Test::Blog::Comment.new(:parent_type => "OhSnap")
-        assert_raises(RPCMapper::PolymorphicAssociationTypeError) do
+        comment = Perry::Test::Blog::Comment.new(:parent_type => "OhSnap")
+        assert_raises(Perry::PolymorphicAssociationTypeError) do
           comment.class.defined_associations[:parent].target_klass(comment)
         end
       end
@@ -58,8 +58,8 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
   context ":belongs_to association" do
     setup do
-      @klass = RPCMapper::Association::BelongsTo
-      @model = Class.new(RPCMapper::Base)
+      @klass = Perry::Association::BelongsTo
+      @model = Class.new(Perry::Base)
       @association = @klass.new(@model, "foo")
     end
 
@@ -86,7 +86,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
     context "scope method" do
       setup do
-        @article = RPCMapper::Test::Blog::Article
+        @article = Perry::Test::Blog::Article
       end
 
       should "return nil if no foreign_key present" do
@@ -96,7 +96,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
       should "return a scope for the target class if association present" do
         record = @article.new(:site_id => 1)
-        assert_equal(RPCMapper::Relation, @article.defined_associations[:site].scope(record).class)
+        assert_equal(Perry::Relation, @article.defined_associations[:site].scope(record).class)
       end
 
       should "the scope should have the options for he association query" do
@@ -110,9 +110,9 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
   context "has associations" do
     setup do
-      @blog = RPCMapper::Test::Blog
-      @klass = RPCMapper::Association::Has
-      @model = Class.new(RPCMapper::Base)
+      @blog = Perry::Test::Blog
+      @klass = Perry::Association::Has
+      @model = Class.new(Perry::Base)
       @association = @klass.new(@model, "foo")
     end
 
@@ -146,7 +146,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
     context "scope method" do
       setup do
-        @article = RPCMapper::Test::Blog::Article
+        @article = Perry::Test::Blog::Article
       end
 
       should "return nil if no foreign_key present" do
@@ -156,7 +156,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
       should "return a scope for the target class if association present" do
         record = @article.new(:id => 1)
-        assert_equal(RPCMapper::Relation,
+        assert_equal(Perry::Relation,
           @article.defined_associations[:comments].scope(record).class)
       end
 
@@ -175,7 +175,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
     context "specifically the :has_many association" do
       setup do
-        @klass = RPCMapper::Association::HasMany
+        @klass = Perry::Association::HasMany
         @association = @klass.new(@model, "foo")
       end
 
@@ -190,8 +190,8 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
     context "specifically the :has_many_through association" do
       setup do
-        @klass = RPCMapper::Association::HasManyThrough
-        @site = RPCMapper::Test::Blog::Site
+        @klass = Perry::Association::HasManyThrough
+        @site = Perry::Test::Blog::Site
         @association = @site.defined_associations[:article_comments]
         @adapter = @site.send(:read_adapter)
       end
@@ -215,14 +215,14 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
       end
 
       should "raise an AssociationNotFound exception if :through is not a association on class" do
-        assert_raises(RPCMapper::AssociationNotFound) do
+        assert_raises(Perry::AssociationNotFound) do
           @klass.new(@site, :foo, :through => :bar).proxy_association
         end
       end
 
       should "raise an AssociationNotFound exception if target association " +
         "is not defined on the proxy association's class" do
-        assert_raises(RPCMapper::AssociationNotFound) do
+        assert_raises(Perry::AssociationNotFound) do
           @klass.new(@site, :foo, :through => :articles).target_association
         end
       end
@@ -256,8 +256,8 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
         site = @site.first
         comments = site.article_comments
 
-        assert_equal RPCMapper::Relation, comments.class
-        assert_equal RPCMapper::Test::ExtendedBlog::Comment, comments.klass
+        assert_equal Perry::Relation, comments.class
+        assert_equal Perry::Test::ExtendedBlog::Comment, comments.klass
       end
 
       should "execute 2 adapter queries when fetching association" do
@@ -308,7 +308,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
           assert_equal 1, @adapter.calls.size
 
           hash = relation.to_hash
-          assert_equal(RPCMapper::Test::ExtendedBlog::Comment, relation.klass)
+          assert_equal(Perry::Test::ExtendedBlog::Comment, relation.klass)
           assert_equal({ :parent_id => [1,2,3] }, hash[:where].first)
           assert_equal({ :parent_type => "Article" }, hash[:where].last)
         end
@@ -326,7 +326,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
         #
         should "Use proxy's foreign key values and target's primary key attribute" do
           @adapter.data = { :id => 1 }
-          article = RPCMapper::Test::ExtendedBlog::Article.first
+          article = Perry::Test::ExtendedBlog::Article.first
 
           @adapter.data = {
             :id => lambda { |prev| prev ? prev[:id] + 1 : 1 },
@@ -337,13 +337,13 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
           assert_equal 1, @adapter.calls.size
 
           hash = relation.to_hash
-          assert_equal(RPCMapper::Test::ExtendedBlog::Person, relation.klass)
+          assert_equal(Perry::Test::ExtendedBlog::Person, relation.klass)
           assert_equal({ :id => [11, 12, 13] }, hash[:where].first)
         end
 
         should "use source_type to determine target's klass when its association is polymorphic" do
           @adapter.data = { :id => 1 }
-          person = RPCMapper::Test::ExtendedBlog::Person.first
+          person = Perry::Test::ExtendedBlog::Person.first
 
           @adapter.data = {
             :id => lambda { |prev| prev ? prev[:id] + 1 : 1 },
@@ -356,7 +356,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
           # It should figure this out from the :source_type option
           hash = relation.to_hash
-          assert_equal(RPCMapper::Test::ExtendedBlog::Article, relation.klass)
+          assert_equal(Perry::Test::ExtendedBlog::Article, relation.klass)
           assert_equal({ :id => [11, 12, 13] }, hash[:where].first)
         end
       end
@@ -383,7 +383,7 @@ class RPCMapper::AssociationTest < Test::Unit::TestCase
 
     context "specifically the :has_one association" do
       setup do
-        @klass = RPCMapper::Association::HasOne
+        @klass = Perry::Association::HasOne
         @association = @klass.new(@model, "foo")
       end
 

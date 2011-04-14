@@ -1,10 +1,10 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 
-class RPCMapper::AssociationPreloadTest < Test::Unit::TestCase
+class Perry::AssociationPreloadTest < Test::Unit::TestCase
 
-  context "BertMapper::Base with AssociationPreload class" do
+  context "Perry::Base with AssociationPreload class" do
     setup do
-      @model = Class.new(RPCMapper::Test::Base)
+      @model = Class.new(Perry::Test::Base)
       @adapter = @model.send(:read_adapter)
       # TRP: Block all Net::HTTP requests
       FakeWeb.allow_net_connect = false
@@ -28,10 +28,10 @@ class RPCMapper::AssociationPreloadTest < Test::Unit::TestCase
           :person_id => 1
         }
         @adapter.count = 5
-        @site = RPCMapper::Test::Blog::Site
-        @article = RPCMapper::Test::ExtendedBlog::Article
+        @site = Perry::Test::Blog::Site
+        @article = Perry::Test::ExtendedBlog::Article
 
-        RPCMapper::Test::Blog::Person.reset_cache_store
+        Perry::Test::Blog::Person.reset_cache_store
       end
 
       should "run 1+n queries where n is the # of associations to load" do
@@ -42,13 +42,13 @@ class RPCMapper::AssociationPreloadTest < Test::Unit::TestCase
       should "include the eager loaded associations on the model" do
         sites = @site.scoped.all(:includes => [:articles, :comments, :maintainer])
 
-        assert_equal RPCMapper::Relation, sites.first.articles.class
+        assert_equal Perry::Relation, sites.first.articles.class
         assert_equal @article, sites.first.articles[0].class
 
-        assert_equal RPCMapper::Relation, sites.first.comments.class
-        assert_equal RPCMapper::Test::ExtendedBlog::Comment, sites.first.comments[0].class
+        assert_equal Perry::Relation, sites.first.comments.class
+        assert_equal Perry::Test::ExtendedBlog::Comment, sites.first.comments[0].class
 
-        assert_equal RPCMapper::Test::ExtendedBlog::Person, sites.first.maintainer.class
+        assert_equal Perry::Test::ExtendedBlog::Person, sites.first.maintainer.class
       end
 
       should "force eager loaded association to reload with fresh scope" do
@@ -64,7 +64,7 @@ class RPCMapper::AssociationPreloadTest < Test::Unit::TestCase
       end
 
       should "calling fresh on a relation should cause any eager loaded associations to freshen as well" do
-        @person = RPCMapper::Test::ExtendedBlog::Person
+        @person = Perry::Test::ExtendedBlog::Person
         people = @person.scoped.includes(:employees)
 
         # No calls yet
@@ -85,13 +85,13 @@ class RPCMapper::AssociationPreloadTest < Test::Unit::TestCase
       end
 
       should "raise AssociationNotFound for nonexistant associations" do
-        assert_raises RPCMapper::AssociationNotFound do
+        assert_raises Perry::AssociationNotFound do
           @site.scoped.includes(:foobar).all
         end
       end
 
       should "raise AssociationPreloadNotSupported if association requires an instance (has block options)" do
-        assert_raises(RPCMapper::AssociationPreloadNotSupported) do
+        assert_raises(Perry::AssociationPreloadNotSupported) do
           @site.scoped.includes(:awesome_comments).all
         end
       end

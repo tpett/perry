@@ -1,21 +1,21 @@
-# TRP: RPCMapper modules
-require 'rpc_mapper/errors'
-require 'rpc_mapper/associations/contains'
-require 'rpc_mapper/associations/external'
-require 'rpc_mapper/association_preload'
-require 'rpc_mapper/cacheable'
-require 'rpc_mapper/serialization'
-require 'rpc_mapper/relation'
-require 'rpc_mapper/scopes'
-require 'rpc_mapper/adapters'
+# TRP: Perry modules
+require 'perry/errors'
+require 'perry/associations/contains'
+require 'perry/associations/external'
+require 'perry/association_preload'
+require 'perry/cacheable'
+require 'perry/serialization'
+require 'perry/relation'
+require 'perry/scopes'
+require 'perry/adapters'
 
 
-class RPCMapper::Base
-  include RPCMapper::Associations::Contains
-  include RPCMapper::Associations::External
-  include RPCMapper::AssociationPreload
-  include RPCMapper::Serialization
-  include RPCMapper::Scopes
+class Perry::Base
+  include Perry::Associations::Contains
+  include Perry::Associations::External
+  include Perry::AssociationPreload
+  include Perry::Serialization
+  include Perry::Scopes
 
   attr_accessor :attributes, :new_record, :read_options, :write_options
   alias :new_record? :new_record
@@ -109,8 +109,8 @@ class RPCMapper::Base
         write_inheritable_attribute :write_adapter, nil if adapter_type != write_adapter.type
       else
         # TRP: Pull in methods and libraries needed for mutable functionality
-        require 'rpc_mapper/persistence' unless defined?(RPCMapper::Persistence)
-        self.send(:include, RPCMapper::Persistence) unless self.class.ancestors.include?(RPCMapper::Persistence)
+        require 'perry/persistence' unless defined?(Perry::Persistence)
+        self.send(:include, Perry::Persistence) unless self.class.ancestors.include?(Perry::Persistence)
 
         # TRP: Create writers if attributes are declared before configure_mutable is called
         self.defined_attributes.each { |attribute| create_writer(attribute) }
@@ -138,7 +138,7 @@ class RPCMapper::Base
 
     def configure_cacheable(options={})
       unless cacheable
-        self.send(:include, RPCMapper::Cacheable)
+        self.send(:include, Perry::Cacheable)
         self.enable_caching(options)
       end
     end
@@ -164,7 +164,7 @@ class RPCMapper::Base
     end
 
     def relation
-      @relation ||= RPCMapper::Relation.new(self)
+      @relation ||= Perry::Relation.new(self)
     end
 
     def default_scope(scope)
@@ -186,7 +186,7 @@ class RPCMapper::Base
       new_adapter = if current_adapter
         current_adapter.extend_adapter(config)
       else
-        RPCMapper::Adapters::AbstractAdapter.create(type, config)
+        Perry::Adapters::AbstractAdapter.create(type, config)
       end
 
       write_inheritable_attribute :"#{mode}_adapter", new_adapter

@@ -1,8 +1,8 @@
-require 'rpc_mapper/logger'
+require 'perry/logger'
 
-module RPCMapper::Adapters
+module Perry::Adapters
   class AbstractAdapter
-    include RPCMapper::Logger
+    include Perry::Logger
 
     attr_accessor :config
     attr_reader :type
@@ -42,19 +42,19 @@ module RPCMapper::Adapters
     def read(options)
       raise(NotImplementedError,
             "You must not use the abstract adapter.  Implement an adapter that extends the " +
-            "RPCMapper::Adapters::AbstractAdapter class and overrides this method.")
+            "Perry::Adapters::AbstractAdapter class and overrides this method.")
     end
 
     def write(object)
       raise(NotImplementedError,
             "You must not use the abstract adapter.  Implement an adapter that extends the " +
-            "RPCMapper::Adapters::AbstractAdapter class and overrides this method.")
+            "Perry::Adapters::AbstractAdapter class and overrides this method.")
     end
 
     def delete(object)
       raise(NotImplementedError,
             "You must not use the abstract adapter.  Implement an adapter that extends the " +
-            "RPCMapper::Adapters::AbstractAdapter class and overrides this method.")
+            "Perry::Adapters::AbstractAdapter class and overrides this method.")
     end
 
     def self.register_as(name)

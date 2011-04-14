@@ -1,4 +1,4 @@
-module RPCMapper::Cacheable
+module Perry::Cacheable
 
   class Store
 

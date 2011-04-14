@@ -1,6 +1,6 @@
-require 'rpc_mapper/associations/common'
+require 'perry/associations/common'
 
-module RPCMapper::Associations
+module Perry::Associations
 
   module Contains
     module ClassMethods
@@ -55,7 +55,7 @@ module RPCMapper::Associations
     end
 
     def self.included(receiver)
-      receiver.send :include, RPCMapper::Associations::Common
+      receiver.send :include, Perry::Associations::Common
       receiver.extend         ClassMethods
       receiver.send :include, InstanceMethods
     end

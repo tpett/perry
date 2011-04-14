@@ -1,4 +1,4 @@
-module RPCMapper
+module Perry
   module Version
 
     MAJOR = 0

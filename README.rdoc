@@ -1,20 +1,20 @@
-= RPCMapper
+= Perry
 
 == Description
 
-Ruby library for querying and mapping data over RPC
+Ruby library for querying and mapping data through generic interfaces
 
 == Installation
 
-    gem install rpc-mapper
+    gem install perry
 
 == Usage
 
-    require 'rpc_mapper'
+    require 'perry'
 
 == License
 
-Copyright (c) 2010 Travis Petticrew
+Copyright (c) 2011 Travis Petticrew
 
 Permission is hereby granted, free of charge, to any person
 obtaining a copy of this software and associated documentation

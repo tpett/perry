@@ -1,4 +1,4 @@
-module RPCMapper::Associations
+module Perry::Associations
 
   module Common
     module ClassMethods

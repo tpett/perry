@@ -1,13 +1,13 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 
-class RPCMapper::RestfulHttpAdapterTest < Test::Unit::TestCase
+class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
 
   #-----------------------------------------
   # TRP: Persistence (restful_http adapter test)
   #-----------------------------------------
   context "restful http adapter" do
     setup do
-      @model = Class.new(RPCMapper::Test::Base)
+      @model = Class.new(Perry::Test::Base)
       @model.class_eval do
         attributes :id, :a, :b, :c
         write_with :restful_http

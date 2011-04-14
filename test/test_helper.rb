@@ -13,7 +13,7 @@ require 'fakeweb'
   $LOAD_PATH.unshift(full_path) unless $LOAD_PATH.include?(full_path)
 end
 
-require 'rpc_mapper'
+require 'perry'
 
 # TRP: Test models
 require 'test/fixtures/test_adapter'

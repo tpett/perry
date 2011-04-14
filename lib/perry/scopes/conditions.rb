@@ -3,9 +3,9 @@
 # => http://github.com/binarylogic/searchlogic
 #
 #  It is designed to mimick much of the API of searchlogic so that it can be used alongside AR objects utilizing Searchlogic
-#  without developer confusion.  There are certain features that are skipped because of the nature of RPCMapper.
+#  without developer confusion.  There are certain features that are skipped because of the nature of Perry.
 
-module RPCMapper::Scopes
+module Perry::Scopes
 
   module Conditions
 

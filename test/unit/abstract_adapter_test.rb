@@ -1,11 +1,11 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 
-class RPCMapper::AbstractAdapterTest < Test::Unit::TestCase
+class Perry::AbstractAdapterTest < Test::Unit::TestCase
 
   context "AbstractAdapter class" do
 
     setup do
-      @abstract = RPCMapper::Adapters::AbstractAdapter
+      @abstract = Perry::Adapters::AbstractAdapter
     end
 
     context "initialize method" do
@@ -166,7 +166,7 @@ class RPCMapper::AbstractAdapterTest < Test::Unit::TestCase
 
   context "AdapterConfig class" do
     setup do
-      @config = RPCMapper::Adapters::AbstractAdapter::AdapterConfig
+      @config = Perry::Adapters::AbstractAdapter::AdapterConfig
     end
 
     should "have functionality of OpenStruct" do

@@ -1,4 +1,4 @@
-module RPCMapper::QueryMethods
+module Perry::QueryMethods
   # TRP: Define each of the variables the query options will be stored in.
   attr_accessor :select_values, :group_values, :order_values, :joins_values, :includes_values, :where_values, :having_values,
                 :limit_value, :offset_value, :from_value,

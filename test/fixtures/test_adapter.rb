@@ -1,5 +1,5 @@
-module RPCMapper::Test
-  class TestAdapter < RPCMapper::Adapters::AbstractAdapter
+module Perry::Test
+  class TestAdapter < Perry::Adapters::AbstractAdapter
     register_as :test
 
     @@calls = []

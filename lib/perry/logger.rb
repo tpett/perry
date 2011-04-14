@@ -1,4 +1,4 @@
-module RPCMapper
+module Perry
 
   module Logger
     module ClassMethods
@@ -15,16 +15,16 @@ module RPCMapper
         end
       rescue Exception => err
         log_info(params, name, 0)
-        RPCMapper.logger.error("#{err.message} \n\n#{err.backtrace.join('\n')}")
+        Perry.logger.error("#{err.message} \n\n#{err.backtrace.join('\n')}")
         []
       end
 
       private
 
       def log_info(params, name, ms)
-        if RPCMapper.logger && RPCMapper.logger.debug?
+        if Perry.logger && Perry.logger.debug?
           name = '%s (%.1fms)' % [name || 'RPC', ms]
-          RPCMapper.logger.debug(format_log_entry(name, params.inspect))
+          Perry.logger.debug(format_log_entry(name, params.inspect))
         end
       end
 

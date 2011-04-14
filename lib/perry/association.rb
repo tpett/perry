@@ -1,6 +1,6 @@
-module RPCMapper::Association; end
+module Perry::Association; end
 
-module RPCMapper::Association
+module Perry::Association
 
   ##
   # Association::Base
@@ -53,7 +53,7 @@ module RPCMapper::Association
 
     def target_klass(object=nil)
       if options[:polymorphic] && object
-        poly_type = object.is_a?(RPCMapper::Base) ? object.send("#{id}_type") : object
+        poly_type = object.is_a?(Perry::Base) ? object.send("#{id}_type") : object
       end
 
       klass = if poly_type
@@ -65,7 +65,7 @@ module RPCMapper::Association
           eval(type_string)
         rescue NameError => err
           raise(
-            RPCMapper::PolymorphicAssociationTypeError,
+            Perry::PolymorphicAssociationTypeError,
             "No constant defined called #{type_string}"
           )
         end
@@ -82,7 +82,7 @@ module RPCMapper::Association
         eval(options[:class_name])
       end
 
-      RPCMapper::Base.resolve_leaf_klass klass
+      Perry::Base.resolve_leaf_klass klass
     end
 
     def scope(object)
@@ -92,7 +92,7 @@ module RPCMapper::Association
     # TRP: Only eager loadable if association query does not depend on instance
     # data
     def eager_loadable?
-      RPCMapper::Relation::FINDER_OPTIONS.inject(true) do |condition, key|
+      Perry::Relation::FINDER_OPTIONS.inject(true) do |condition, key|
         condition && !options[key].respond_to?(:call)
       end
     end
@@ -104,7 +104,7 @@ module RPCMapper::Association
     end
 
     def base_finder_options(object)
-      RPCMapper::Relation::FINDER_OPTIONS.inject({}) do |sum, key|
+      Perry::Relation::FINDER_OPTIONS.inject({}) do |sum, key|
         value = self.options[key]
         sum.merge!(key => value.respond_to?(:call) ? value.call(object) : value) if value
         sum
@@ -168,7 +168,7 @@ module RPCMapper::Association
       super || if self.polymorphic?
         "#{options[:as]}_id"
       else
-         "#{RPCMapper::Base.base_class_name(source_klass).downcase}_id"
+         "#{Perry::Base.base_class_name(source_klass).downcase}_id"
       end.to_sym
     end
 
@@ -196,7 +196,7 @@ module RPCMapper::Association
       s = base_scope(object).where(self.foreign_key => object[self.primary_key])
       if polymorphic?
         s = s.where(
-          polymorphic_type => RPCMapper::Base.base_class_name(object.class) )
+          polymorphic_type => Perry::Base.base_class_name(object.class) )
       end
       s
     end
@@ -245,7 +245,7 @@ module RPCMapper::Association
     def proxy_association
       @proxy_association ||= source_klass.defined_associations[options[:through]] ||
         raise(
-          RPCMapper::AssociationNotFound,
+          Perry::AssociationNotFound,
           ":has_many_through: '#{options[:through]}' is not an association " +
           "on #{source_klass}"
         )
@@ -257,7 +257,7 @@ module RPCMapper::Association
       klass = proxy_association.target_klass
       @target_association = klass.defined_associations[self.id] ||
         klass.defined_associations[self.options[:source]] ||
-        raise(RPCMapper::AssociationNotFound,
+        raise(Perry::AssociationNotFound,
           ":has_many_through: '#{options[:source] || self.id}' is not an " +
           "association on #{klass}"
         )
@@ -297,7 +297,7 @@ module RPCMapper::Association
       if target_association.polymorphic? && target_is_has?
         relation = relation.where(
           target_association.polymorphic_type =>
-            RPCMapper::Base.base_class_name(proxy_association.target_klass(object))
+            Perry::Base.base_class_name(proxy_association.target_klass(object))
         )
       end
 

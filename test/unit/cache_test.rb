@@ -1,11 +1,11 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 
-class RPCMapper::Cacheable::StoreTest < Test::Unit::TestCase
+class Perry::Cacheable::StoreTest < Test::Unit::TestCase
 
   context "Cacheable::Store instance" do
     setup do
       @lifetime = 5*60
-      @store = RPCMapper::Cacheable::Store.new(@lifetime)
+      @store = Perry::Cacheable::Store.new(@lifetime)
     end
 
     should "set default_longevity" do

@@ -1,8 +1,8 @@
-require 'rpc_mapper/cacheable/store'
-require 'rpc_mapper/cacheable/entry'
+require 'perry/cacheable/store'
+require 'perry/cacheable/entry'
 require 'digest/md5'
 
-module RPCMapper::Cacheable
+module Perry::Cacheable
 
   module ClassMethods
 
@@ -11,7 +11,7 @@ module RPCMapper::Cacheable
     @@cache_store = nil
 
     def reset_cache_store(default_longevity=DEFAULT_LONGEVITY)
-      @@cache_store = RPCMapper::Cacheable::Store.new(default_longevity)
+      @@cache_store = Perry::Cacheable::Store.new(default_longevity)
     end
 
     def cache_store

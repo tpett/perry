@@ -1,8 +1,8 @@
 autoload :Net, 'net/http'
 autoload :URI, 'uri'
 
-module RPCMapper::Adapters
-  class RestfulHTTPAdapter < RPCMapper::Adapters::AbstractAdapter
+module Perry::Adapters
+  class RestfulHTTPAdapter < Perry::Adapters::AbstractAdapter
     register_as :restful_http
 
     attr_reader :last_response

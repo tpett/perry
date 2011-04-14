@@ -1,10 +1,10 @@
-require 'rpc_mapper/relation/query_methods'
-require 'rpc_mapper/relation/finder_methods'
+require 'perry/relation/query_methods'
+require 'perry/relation/finder_methods'
 
 # TRP: The concepts behind this class are heavily influenced by ActiveRecord::Relation v.3.0.0RC1
 # => http://github.com/rails/rails
 # Used to achieve the chainability of scopes -- methods are delegated back and forth from BM::Base and BM::Relation
-class RPCMapper::Relation
+class Perry::Relation
   attr_reader :klass
   attr_accessor :records
 
@@ -13,8 +13,8 @@ class RPCMapper::Relation
 
   FINDER_OPTIONS = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS + [:conditions, :search, :sql]
 
-  include RPCMapper::QueryMethods
-  include RPCMapper::FinderMethods
+  include Perry::QueryMethods
+  include Perry::FinderMethods
 
   def initialize(klass)
     @klass = klass
