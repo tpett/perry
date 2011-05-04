@@ -4,12 +4,12 @@ require 'perry/logger'
 # = Perry::Adapters::AbstractAdapter
 #
 # This is the base class from which all adapters should inherit from.  Subclasses should overwrite
-# one or all of `read`, `write`, and/or `delete`.  They should also register themselves with a
-# unique name using the `register_as` class method.
+# one or all of read, write, and/or delete.  They should also register themselves with a
+# unique name using the register_as class method.
 #
 # == Configuration
 #
-# You can configure your adapters using the `configure` method on `Perry::Base`
+# You can configure your adapters using the configure method on Perry::Base
 #
 #   configure(:read) do |config|
 #     config.adapter_var_1 = :custom_value
@@ -58,25 +58,31 @@ class Perry::Adapters::AbstractAdapter
   attr_reader :type
   @@registered_adapters ||= {}
 
+  # Accepts type as :read, :write, or :delete and a base configuration context for this adapter.
   def initialize(type, config)
     @type = type.to_sym
     @configuration_contexts = config.is_a?(Array) ? config : [config]
   end
 
+  # Wrapper to the standard init method that will lookup the adapter's class based on its registered
+  # symbol name.
   def self.create(type, config)
     klass = @@registered_adapters[type.to_sym]
     klass.new(type, config)
   end
 
+  # Return a new adapter of the same type that adds the given configuration context
   def extend_adapter(config)
     config = config.is_a?(Array) ? config : [config]
     self.class.create(self.type, @configuration_contexts + config)
   end
 
+  # return the merged configuration object
   def config
     @config ||= build_configuration
   end
 
+  # runs the adapter in the specified type mode -- designed to work with the middleware stack
   def call(mode, options)
     @stack ||= self.middlewares.reverse.inject(self.method(mode)) do |below, (above_klass, above_config)|
       above_klass.new(below, above_config)
@@ -85,28 +91,33 @@ class Perry::Adapters::AbstractAdapter
     @stack.call(options)
   end
 
+  # Return an array of all middlewares
   def middlewares
     self.config[:middlewares] || []
   end
 
+  # Abstract read method -- overridden by subclasses
   def read(options)
     raise(NotImplementedError,
           "You must not use the abstract adapter.  Implement an adapter that extends the " +
           "Perry::Adapters::AbstractAdapter class and overrides this method.")
   end
 
+  # Abstract write method -- overridden by subclasses
   def write(object)
     raise(NotImplementedError,
           "You must not use the abstract adapter.  Implement an adapter that extends the " +
           "Perry::Adapters::AbstractAdapter class and overrides this method.")
   end
 
+  # Abstract delete method -- overridden by subclasses
   def delete(object)
     raise(NotImplementedError,
           "You must not use the abstract adapter.  Implement an adapter that extends the " +
           "Perry::Adapters::AbstractAdapter class and overrides this method.")
   end
 
+  # New adapters should register themselves using this method
   def self.register_as(name)
     @@registered_adapters[name.to_sym] = self
   end
