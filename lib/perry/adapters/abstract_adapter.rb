@@ -1,92 +1,141 @@
 require 'perry/logger'
 
-module Perry::Adapters
-  class AbstractAdapter
-    include Perry::Logger
+##
+# = Perry::Adapters::AbstractAdapter
+#
+# This is the base class from which all adapters should inherit from.  Subclasses should overwrite
+# one or all of `read`, `write`, and/or `delete`.  They should also register themselves with a
+# unique name using the `register_as` class method.
+#
+# == Configuration
+#
+# You can configure your adapters using the `configure` method on `Perry::Base`
+#
+#   configure(:read) do |config|
+#     config.adapter_var_1 = :custom_value
+#     config.adapter_var_2 = [:some, :values]
+#   end
+#
+# This block creates a new configuration context.  Each context is merged onto the previous context
+# allowing subclasses to override configuration set by their parent class.
+#
+# == Middlewares
+#
+# Middlewares allow you to add custom logic between the model and the adapter.  A good example is
+# caching.  A caching middleware could be implemented that intercepted a request to the adapter and
+# returned the cached value for that request.  If the request is a cache miss it could pass the
+# request on to the adapter, and then cache the result for subsequent calls of the same request.
+#
+# This is an example mof a no-op middleware:
+#
+#   class NoOpMiddleware
+#
+#     def initialize(adapter, config={})
+#       @adapter = adapter
+#       @config = config
+#     end
+#
+#     def call(options)
+#       @adapter.call(options)
+#     end
+#
+#   end
+#
+# Though this doesn't do anything it serves to demonstrate the basic structure of a middleware.
+# Logic could be added to perform caching, custom querying, or custom result processing.
+#
+# Middlewares can also be chained to perform several independent actions.  Middlewares are configured
+# through a custom configuration method:
+#
+#   configure(:read) do |config|
+#     config.add_middleware(MyMiddleware, :config => 'var', :foo => 'bar')
+#   end
+#
+class Perry::Adapters::AbstractAdapter
+  include Perry::Logger
 
-    attr_accessor :config
-    attr_reader :type
-    @@registered_adapters ||= {}
+  attr_accessor :config
+  attr_reader :type
+  @@registered_adapters ||= {}
 
-    def initialize(type, config)
-      @type = type.to_sym
-      @configuration_contexts = config.is_a?(Array) ? config : [config]
+  def initialize(type, config)
+    @type = type.to_sym
+    @configuration_contexts = config.is_a?(Array) ? config : [config]
+  end
+
+  def self.create(type, config)
+    klass = @@registered_adapters[type.to_sym]
+    klass.new(type, config)
+  end
+
+  def extend_adapter(config)
+    config = config.is_a?(Array) ? config : [config]
+    self.class.create(self.type, @configuration_contexts + config)
+  end
+
+  def config
+    @config ||= build_configuration
+  end
+
+  def call(mode, options)
+    @stack ||= self.middlewares.reverse.inject(self.method(mode)) do |below, (above_klass, above_config)|
+      above_klass.new(below, above_config)
     end
 
-    def self.create(type, config)
-      klass = @@registered_adapters[type.to_sym]
-      klass.new(type, config)
-    end
+    @stack.call(options)
+  end
 
-    def extend_adapter(config)
-      config = config.is_a?(Array) ? config : [config]
-      self.class.create(self.type, @configuration_contexts + config)
-    end
+  def middlewares
+    self.config[:middlewares] || []
+  end
 
-    def config
-      @config ||= build_configuration
-    end
+  def read(options)
+    raise(NotImplementedError,
+          "You must not use the abstract adapter.  Implement an adapter that extends the " +
+          "Perry::Adapters::AbstractAdapter class and overrides this method.")
+  end
 
-    def call(mode, options)
-      @stack ||= self.middlewares.reverse.inject(self.method(mode)) do |below, (above_klass, above_config)|
-        above_klass.new(below, above_config)
+  def write(object)
+    raise(NotImplementedError,
+          "You must not use the abstract adapter.  Implement an adapter that extends the " +
+          "Perry::Adapters::AbstractAdapter class and overrides this method.")
+  end
+
+  def delete(object)
+    raise(NotImplementedError,
+          "You must not use the abstract adapter.  Implement an adapter that extends the " +
+          "Perry::Adapters::AbstractAdapter class and overrides this method.")
+  end
+
+  def self.register_as(name)
+    @@registered_adapters[name.to_sym] = self
+  end
+
+  private
+
+  # TRP: Run each configure block in order of class hierarchy / definition and merge the results.
+  def build_configuration
+    @configuration_contexts.inject({}) do |sum, config|
+      if config.is_a?(Hash)
+        sum.merge(config)
+      else
+        AdapterConfig.new(sum).tap { |ac| config.call(ac) }.marshal_dump
       end
+    end
+  end
 
-      @stack.call(options)
+  class AdapterConfig < OpenStruct
+
+    def add_middleware(klass, config={})
+      self.middlewares ||= []
+      self.middlewares << [klass, config]
     end
 
-    def middlewares
-      self.config[:middlewares] || []
-    end
-
-    def read(options)
-      raise(NotImplementedError,
-            "You must not use the abstract adapter.  Implement an adapter that extends the " +
-            "Perry::Adapters::AbstractAdapter class and overrides this method.")
-    end
-
-    def write(object)
-      raise(NotImplementedError,
-            "You must not use the abstract adapter.  Implement an adapter that extends the " +
-            "Perry::Adapters::AbstractAdapter class and overrides this method.")
-    end
-
-    def delete(object)
-      raise(NotImplementedError,
-            "You must not use the abstract adapter.  Implement an adapter that extends the " +
-            "Perry::Adapters::AbstractAdapter class and overrides this method.")
-    end
-
-    def self.register_as(name)
-      @@registered_adapters[name.to_sym] = self
-    end
-
-    private
-
-    # TRP: Run each configure block in order of class hierarchy / definition and merge the results.
-    def build_configuration
-      @configuration_contexts.inject({}) do |sum, config|
-        if config.is_a?(Hash)
-          sum.merge(config)
-        else
-          AdapterConfig.new(sum).tap { |ac| config.call(ac) }.marshal_dump
-        end
-      end
-    end
-
-    class AdapterConfig < OpenStruct
-
-      def add_middleware(klass, config={})
-        self.middlewares ||= []
-        self.middlewares << [klass, config]
-      end
-
-      def to_hash
-        marshal_dump
-      end
-
+    def to_hash
+      marshal_dump
     end
 
   end
+
 end
 
