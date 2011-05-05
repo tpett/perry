@@ -17,6 +17,7 @@ require 'perry'
 
 # TRP: Test models
 require 'test/fixtures/test_adapter'
+require 'test/fixtures/middleware_adapter'
 require 'test/fixtures/models'
 
 # Pull in factories

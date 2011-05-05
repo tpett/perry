@@ -8,7 +8,7 @@ require 'perry/serialization'
 require 'perry/relation'
 require 'perry/scopes'
 require 'perry/adapters'
-
+require 'perry/middlewares'
 
 class Perry::Base
   include Perry::Associations::Contains
