@@ -12,9 +12,10 @@ module Perry::Adapters
     end
 
     def read(options)
-      log(options, "RPC #{config[:service]}") {
+      query = options[:relation].to_hash
+      log(query, "RPC #{config[:service]}") {
         self.service.call.send(self.namespace).send(self.service_name,
-                                                    options.merge(config[:default_options] || {}))
+                                                    query.merge(config[:default_options] || {}))
       }
     end
 

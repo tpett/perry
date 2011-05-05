@@ -12,13 +12,14 @@ module Perry::Adapters
       @configuration_contexts << { :primary_key => :id }
     end
 
-    def write(object)
+    def write(options)
+      object = options[:object]
       params = build_params_from_attributes(object)
       object.new_record? ? post_http(object, params) : put_http(object, params)
     end
 
-    def delete(object)
-      delete_http(object)
+    def delete(options)
+      delete_http(options[:object])
     end
 
     protected

@@ -9,19 +9,20 @@ module Perry::Test
     @@writes_return_value = true
 
     def read(options)
-      @@calls << [:read, options]
+      query = options[:relation].to_hash
+      @@calls << [:read, query]
       [].tap do |results|
-        (@@count || options[:limit] || 1).times { results << self.data }
+        (@@count || query[:limit] || 1).times { results << self.data }
       end.compact
     end
 
-    def write(object)
-      @@calls << [:write, object]
+    def write(options)
+      @@calls << [:write, options[:object]]
       @@writes_return_value
     end
 
-    def delete(object)
-      @@calls << [:delete, object]
+    def delete(options)
+      @@calls << [:delete, options[:object]]
       @@writes_return_value
     end
 

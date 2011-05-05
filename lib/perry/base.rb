@@ -96,8 +96,11 @@ class Perry::Base
     protected
 
     def fetch_records(relation)
-      options = relation.to_hash
-      self.read_adapter.read(options).collect { |hash| self.new_from_data_store(hash) }.compact.tap { |result| eager_load_associations(result, relation) }
+      self.read_adapter.read(:relation => relation).collect do |hash|
+        self.new_from_data_store(hash)
+      end.compact.tap do |result|
+        eager_load_associations(result, relation)
+      end
     end
 
     def read_with(adapter_type)
