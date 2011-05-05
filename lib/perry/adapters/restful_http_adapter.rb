@@ -7,9 +7,9 @@ module Perry::Adapters
 
     attr_reader :last_response
 
-    def initialize(*args)
-      super
-      @configuration_contexts << { :primary_key => :id }
+    def initialize(type, config)
+      config = config.is_a?(Array) ? config : [config]
+      super(type, [{ :primary_key => :id }] + config)
     end
 
     def write(object)

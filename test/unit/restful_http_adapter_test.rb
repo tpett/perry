@@ -75,6 +75,20 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
       assert FakeWeb.last_request.body.match(/myapikey/)
     end
 
+    should "use :id for the default primary_key" do
+      assert_equal :id, @model.write_adapter.config[:primary_key]
+    end
+
+    should "allow configuration of the primary_key" do
+      pk = :custom
+      @model.clone.tap do |model|
+        model.class_eval do
+          configure_write { |config| config.primary_key = pk }
+        end
+        assert_equal pk, model.write_adapter.config[:primary_key]
+      end
+    end
+
   end
 
 end
