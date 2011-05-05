@@ -12,7 +12,7 @@ class Perry::MiddlewaresTest < Test::Unit::TestCase
   AVAILABLE_MIDDLEWARES.each do |middleware_class|
     context "#{middleware_class} middleware" do
       setup do
-        @options = {}
+        @options = { :relation => Perry::Test::Base.send(:relation) }
         @adapter = Perry::Test::MiddlewareAdapter.new(:read, {})
         @klass = Perry::Middlewares.const_get(middleware_class)
         @middleware = @klass.new(@adapter)

@@ -3,7 +3,94 @@ require "#{File.dirname(__FILE__)}/../../test_helper"
 class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
 
   context "cache records middleware" do
-    should "have tests" do
+    setup do
+      @relation = Perry::Test::Base.send(:relation)
+      @options = { :relation => @relation }
+      @adapter = Perry::Test::MiddlewareAdapter.new(:read, {})
+      @adapter.reset
+      @adapter.data = { :id => 1, :name => "Foo", :expire_at => Time.now + 60 }
+
+      @config = {
+        :expires => :expire_at,
+        :record_count_threshold => 5
+      }
+      @middleware = Perry::Middlewares::CacheRecords.new(@adapter, @config)
+      @middleware.reset_cache_store
+    end
+
+    context "configuration" do
+      should "set the configuration variables" do
+        assert_equal @config[:expires], @middleware.send(:expires)
+        assert_equal @config[:record_count_threshold], @middleware.send(:record_count_threshold)
+      end
+    end
+
+    should "only execute one call for two duplicate requests" do
+      assert_equal @middleware.call(@options), @middleware.call(@options)
+      assert_equal 1, @adapter.calls.size
+    end
+
+    should "only cache if the record count is within threshold" do
+      @middleware.call({ :relation => @relation.limit(@middleware.record_count_threshold + 1) })
+      @middleware.call({ :relation => @relation.limit(@middleware.record_count_threshold + 1) })
+      assert_equal 2, @adapter.calls.size
+    end
+
+    should "rerun query if cache is expired" do
+      @middleware.expires = nil
+      @middleware.reset_cache_store(0)
+      @middleware.call(@options)
+      @middleware.call(@options)
+      assert_equal 2, @adapter.calls.size
+    end
+
+    # TODO
+    should_eventually "set fresh to false if data is from cache and to true if data is not from cache" do
+      assert @model.first.fresh
+      assert !@model.first.fresh
+    end
+
+    # TODO
+    should_eventually "rerun query if fresh scope called" do
+      assert_not_equal @model.fresh.first, @model.fresh.first
+      assert_equal 2, @adapter.calls.size
+    end
+
+    # TODO
+    should_eventually "rerun query if :fresh finder option passed" do
+      assert_not_equal @model.first(:fresh => true), @model.first(:fresh => true)
+      assert_equal 2, @adapter.calls.size
+    end
+
+    context "cache store" do
+      setup do
+        @other_middleware = Perry::Middlewares::CacheRecords.new(@adapter, @config)
+      end
+
+      teardown do
+        @other_middleware.reset_cache_store
+      end
+
+      should "exist" do
+        assert @middleware.respond_to?(:cache_store)
+        assert @middleware.cache_store.kind_of?(Perry::Middlewares::CacheRecords::Store)
+      end
+
+      # TODO
+      should_eventually "be resetabble" do
+        @extend_model = Class.new(@model)
+        @extend_model.first
+        @model.reset_cache_store
+        @extend_model.first
+        assert_equal 2, @adapter.calls.size
+      end
+
+      # TODO: causes other tests to fail when this test is run
+      should_eventually "be persistent across caching middleware instances" do
+        @middleware.call(@options)
+        @other_middleware.call(@options)
+        assert_equal 1, @adapter.calls.size
+      end
     end
   end
 
