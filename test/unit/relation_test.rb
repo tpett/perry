@@ -4,6 +4,15 @@ class Perry::RelationTest < Test::Unit::TestCase
   SINGLE_VALUE_METHODS = [:limit, :offset, :from, :fresh]
   MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :where, :having, :includes]
 
+  def assert_relation_has_value(relation, method, expected_value)
+    value = if MULTI_VALUE_METHODS.include?(method)
+      relation.send("#{method}_values").first
+    else
+      relation.send("#{method}_value")
+    end
+    assert_equal expected_value, value
+  end
+
   context "Perry::Relation class" do
     setup do
       @model = Class.new(Perry::Test::Base)
@@ -38,6 +47,12 @@ class Perry::RelationTest < Test::Unit::TestCase
         end
       end
 
+      should "merge modifiers into new relation" do
+        relation = @relation.dup
+        value = { :foo => 'bar' }
+        relation = relation.merge(@relation.send(:modifiers, value))
+        assert_equal value, relation.send(:modifiers_value)
+      end
     end
 
     context "records accessor" do
@@ -90,6 +105,11 @@ class Perry::RelationTest < Test::Unit::TestCase
         hash = @relation.where('foo').to_hash
         assert_equal ['foo'], hash[:where]
         assert_equal [:where], hash.keys
+      end
+
+      should "not include :modifiers" do
+        hash = @loaded_relation.modifiers( :foo => 'bar').to_hash
+        assert !hash.keys.include?(:modifiers)
       end
 
       should "call any procs set on value methods to allow delayed execution" do
@@ -280,13 +300,16 @@ class Perry::RelationTest < Test::Unit::TestCase
     context "apply_finder_options method" do
       setup do
         @model.send :attributes, :id
-        @all_methods = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS
+        @all_methods = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS + [:modifiers]
       end
 
       should "allow any of the regular query methods as keys" do
-        finder_hash = @all_methods.inject({}) { |hash, method| hash.merge({ method => 'foo' }) }
-        hash = @relation.apply_finder_options(finder_hash).to_hash
-        @all_methods.each { |method| assert_equal 'foo', (v = hash[method]).is_a?(Array) ? v.first : v }
+        test_value = { :foo => 'bar' } # modifiers value requires a hash or a proc
+        finder_hash = @all_methods.inject({}) { |hash, method| hash.merge({ method => test_value }) }
+        relation = @relation.apply_finder_options(finder_hash)
+        @all_methods.each do |method|
+          assert_relation_has_value(relation, method, test_value)
+        end
       end
 
       should "allow :conditions as alias for :where" do
@@ -348,6 +371,76 @@ class Perry::RelationTest < Test::Unit::TestCase
       end
     end
 
+    #-----------------------------------------
+    # Query modifiers
+    #-----------------------------------------
+    context "modifiers" do
+      setup do
+        @mv1 = { :foo => 'bar' }
+        @mv2 = { :biz => 'baz' }
+        @mv3 = { :foo => 'boo' }
+        @p1 = Proc.new { @mv3 }
+      end
+
+      should "delegate :modifiers to scoped" do
+        assert @model.scoped.respond_to?(:modifiers)
+        assert @model.respond_to?(:modifiers)
+      end
+
+      should "clone new relation and replace the modifiers value" do
+        new_relation = @relation.modifiers(@mv1)
+        assert_equal({}, @relation.modifiers_value)
+        assert_equal @mv1, new_relation.modifiers_value
+      end
+
+      should "reset previous modifier values if it receives nil as an argument" do
+        relation = @relation.modifiers(@mv1)
+        assert_equal(@mv1, relation.modifiers_value)
+        relation = relation.modifiers(nil)
+        assert_equal({}, relation.modifiers_value)
+      end
+
+      should "be usable in a scope" do
+        value = { :expires_at => true }
+        @model.class_eval do
+          scope :expire, modifiers(value)
+        end
+        assert_equal value, @model.expire.modifiers_value
+      end
+
+      should "always return a hash" do
+        assert_equal({}, @relation.modifiers_value)
+      end
+
+      should "merge values from multiple calls into a single hash" do
+        relation = @relation.modifiers(@mv1).modifiers(@mv2)
+        assert_equal @mv1.merge(@mv2), relation.modifiers_value
+      end
+
+      should "merge hashes returned from calling Proc values" do
+        relation = @relation.modifiers(@p1)
+        assert_equal @mv3, relation.modifiers_value
+      end
+
+      should "raise an error if a value is neither a hash nor a proc" do
+        relation = @relation.modifiers(:errk!)
+        assert_raise TypeError do
+          relation.modifiers_value
+        end
+      end
+
+      should "raise an error if a value is a proc that does not return a hash" do
+        relation = @relation.modifiers(Proc.new { :gah! })
+        assert_raise TypeError do
+          relation.modifiers_value
+        end
+      end
+
+      should "merge values in the order they were given" do
+        relation = @relation.modifiers(@p1).modifiers(@mv1).modifiers(@mv2)
+        assert_equal @mv3.merge(@mv1).merge(@mv2), relation.modifiers_value
+      end
+    end
 
   end
 
