@@ -3,7 +3,6 @@ require 'perry/errors'
 require 'perry/associations/contains'
 require 'perry/associations/external'
 require 'perry/association_preload'
-require 'perry/cacheable'
 require 'perry/serialization'
 require 'perry/relation'
 require 'perry/scopes'
@@ -20,10 +19,9 @@ class Perry::Base
   attr_accessor :attributes, :new_record, :read_options, :write_options
   alias :new_record? :new_record
 
-  class_inheritable_accessor :read_adapter, :write_adapter, :cacheable,
+  class_inheritable_accessor :read_adapter, :write_adapter,
     :defined_attributes, :scoped_methods, :defined_associations
 
-  self.cacheable = false
   self.defined_associations = {}
   self.defined_attributes = []
 
@@ -136,13 +134,6 @@ class Perry::Base
         scoped.send(method, *args, &block)
       else
         super
-      end
-    end
-
-    def configure_cacheable(options={})
-      unless cacheable
-        self.send(:include, Perry::Cacheable)
-        self.enable_caching(options)
       end
     end
 

@@ -76,7 +76,8 @@ module Perry::Test
 
     class Person < Perry::Test::Base
       attributes :id, :name, :manager_id
-      configure_cacheable
+      # TODO: add caching middleware
+      #configure_cacheable
       belongs_to :manager, :class_name => "Perry::Test::Blog::Person", :foreign_key => :manager_id
       has_many :authored_comments, :class_name => "Perry::Test::Blog::Comment", :foreign_key => :person_id
       has_many :articles, :class_name => "Perry::Test::Blog::Article", :foreign_key => :author_id
