@@ -4,7 +4,8 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
 
   context "cache records middleware" do
     setup do
-      @relation = Perry::Test::Base.send(:relation)
+      @klass = Class.new(Perry::Test::Base)
+      @relation = @klass.send(:relation)
       @options = { :relation => @relation }
       @adapter = Perry::Test::MiddlewareAdapter.new(:read, {})
       @adapter.reset
@@ -44,21 +45,15 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
       assert_equal 2, @adapter.calls.size
     end
 
-    # TODO
+    # TODO: we currently don't have a way to do this now that caching is handled in a middleware
     should_eventually "set fresh to false if data is from cache and to true if data is not from cache" do
       assert @model.first.fresh
       assert !@model.first.fresh
     end
 
-    # TODO
-    should_eventually "rerun query if fresh scope called" do
-      assert_not_equal @model.fresh.first, @model.fresh.first
-      assert_equal 2, @adapter.calls.size
-    end
-
-    # TODO
-    should_eventually "rerun query if :fresh finder option passed" do
-      assert_not_equal @model.first(:fresh => true), @model.first(:fresh => true)
+    should "rerun query if fresh modifier is used" do
+      options = { :relation => @relation.modifiers(:fresh => true) }
+      assert_equal @middleware.call(options), @middleware.call(options)
       assert_equal 2, @adapter.calls.size
     end
 
@@ -76,17 +71,13 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
         assert @middleware.cache_store.kind_of?(Perry::Middlewares::CacheRecords::Store)
       end
 
-      # TODO
-      should_eventually "be resetabble" do
-        @extend_model = Class.new(@model)
-        @extend_model.first
-        @model.reset_cache_store
-        @extend_model.first
+      should "be resetabble" do
+        @middleware.call(@options)
+        @middleware.call(:relation => @relation.modifiers(:reset_cache => true))
         assert_equal 2, @adapter.calls.size
       end
 
-      # TODO: causes other tests to fail when this test is run
-      should_eventually "be persistent across caching middleware instances" do
+      should "be shared across caching middleware instances" do
         @middleware.call(@options)
         @other_middleware.call(@options)
         assert_equal 1, @adapter.calls.size

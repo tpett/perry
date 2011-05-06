@@ -26,11 +26,17 @@ class Perry::Middlewares::CacheRecords
 
   def call(options)
     relation = options[:relation]
+    modifiers = relation.modifiers_value
     query = relation.to_hash
+
+    reset_cache_store if modifiers[:reset_cache]
+    get_fresh = modifiers[:fresh]
+
     key = key_for_query(query)
     cached_values = self.cache_store.read(key)
 
-    if cached_values #&& !get_fresh
+
+    if cached_values && !get_fresh
       @adapter.log(query, "CACHE #{relation.klass.name}")
       cached_values
     else
