@@ -24,14 +24,22 @@ module Perry::AssociationPreload
 
         case association.type
         when :has_many, :has_one
+          # collect out the primary keys from the original queries
           fks = original_results.collect { |record| record.send(association.primary_key) }.compact
 
+          # build conditions for query and run it
           pre_records = association.target_klass.where(association.foreign_key => fks).all(:fresh => force_fresh)
 
+          # inject eager loaded records into original query records
           original_results.each do |record|
+            # id of original record
             pk = record.send(association.primary_key)
+            # all eager records who have an fk equal to original
+            # record's pk
             relevant_records = pre_records.select { |r| r.send(association.foreign_key) == pk }
 
+            # load relevant eager records as scope so it can be
+            # refetched if needed (if collection)
             relevant_records = if association.collection?
               scope = association.scope(record).where(association.foreign_key => pk)
               scope.records = relevant_records
@@ -40,6 +48,7 @@ module Perry::AssociationPreload
               relevant_records.first
             end
 
+            # set the relevant records on the association
             record.send("#{association.id}=", relevant_records)
           end
 

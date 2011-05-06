@@ -171,6 +171,7 @@ class Perry::AssociationTest < Test::Unit::TestCase
         assert_equal "text LIKE '%awesome%'",
           @article.defined_associations[:awesome_comments].scope(record).where_values.first
       end
+
     end
 
     context "specifically the :has_many association" do

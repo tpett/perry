@@ -8,7 +8,7 @@ require 'perry/serialization'
 require 'perry/relation'
 require 'perry/scopes'
 require 'perry/adapters'
-
+require 'perry/middlewares'
 
 class Perry::Base
   include Perry::Associations::Contains
@@ -96,10 +96,10 @@ class Perry::Base
     protected
 
     def fetch_records(relation)
-      self.read_adapter.read(:relation => relation).collect do |hash|
+      self.read_adapter.call(:read, :relation => relation).collect do |hash|
         self.new_from_data_store(hash)
       end.compact.tap do |result|
-        eager_load_associations(result, relation)
+        # eager_load_associations(result, relation)
       end
     end
 
