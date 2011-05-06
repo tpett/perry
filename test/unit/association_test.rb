@@ -373,7 +373,7 @@ class Perry::AssociationTest < Test::Unit::TestCase
           relation.all
           assert_equal 2, @adapter.calls.size - before_count
 
-          relation.fresh.all
+          relation.modifiers(:fresh => true).all
           assert_equal 4, @adapter.calls.size - before_count
         end
       end

@@ -9,7 +9,7 @@ class Perry::Relation
   attr_reader :klass
   attr_accessor :records
 
-  SINGLE_VALUE_METHODS = [:limit, :offset, :from, :fresh]
+  SINGLE_VALUE_METHODS = [:limit, :offset, :from]
   MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :includes, :where, :having]
 
   QUERY_METHODS = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS

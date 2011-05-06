@@ -1,8 +1,7 @@
 module Perry::QueryMethods
   # TRP: Define each of the variables the query options will be stored in.
   attr_accessor :select_values, :group_values, :order_values, :joins_values, :includes_values, :where_values, :having_values,
-                :limit_value, :offset_value, :from_value,
-                :raw_sql_value, :fresh_value
+                :limit_value, :offset_value, :from_value, :raw_sql_value
 
   def select(*args)
     if block_given?
@@ -47,13 +46,6 @@ module Perry::QueryMethods
 
   def from(table)
     clone.tap { |r| r.from_value = table }
-  end
-
-  def fresh(val=true)
-    clone.tap do |r|
-      r.fresh_value = val
-      r.reset_queries if r.fresh_value
-    end
   end
 
   def sql(raw_sql)

@@ -1,8 +1,8 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 
 class Perry::RelationTest < Test::Unit::TestCase
-  SINGLE_VALUE_METHODS = [:limit, :offset, :from, :fresh]
-  MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :where, :having, :includes]
+  SINGLE_VALUE_METHODS = Perry::Relation::SINGLE_VALUE_METHODS
+  MULTI_VALUE_METHODS = Perry::Relation::MULTI_VALUE_METHODS
 
   def assert_relation_has_value(relation, method, expected_value)
     value = if MULTI_VALUE_METHODS.include?(method)
@@ -75,7 +75,7 @@ class Perry::RelationTest < Test::Unit::TestCase
         assert !@adapter.last_call
       end
 
-      should "force a query to run with fresh scope even when records is set explicitly" do
+      should_eventually "force a query to run with fresh scope even when records is set explicitly" do
         assert_not_equal @records, @relation.fresh.all
         assert @adapter.last_call
       end
@@ -266,26 +266,26 @@ class Perry::RelationTest < Test::Unit::TestCase
     end
 
     context "fresh method" do
-      should "force relation to refetch records if it has already run when true passed" do
+      should_eventually "force relation to refetch records if it has already run when true passed" do
         @relation.to_a
         @relation.to_a
         @relation.fresh.to_a
         assert_equal 2, @adapter.calls.size
       end
 
-      should "set fresh_value to true by default" do
+      should_eventually"set fresh_value to true by default" do
         assert !@relation.fresh_value
         @relation = @relation.fresh
         assert @relation.fresh_value
       end
 
-      should "not set fresh_value to true if fresh(false) passed" do
+      should_eventually "not set fresh_value to true if fresh(false) passed" do
         assert !@relation.fresh_value
         @relation = @relation.fresh(false)
         assert !@relation.fresh_value
       end
 
-      should "not force refetch records when fresh(false) called" do
+      should_eventually "not force refetch records when fresh(false) called" do
         @relation.to_a
         @relation.to_a
         @relation.fresh(false).to_a
