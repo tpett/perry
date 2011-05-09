@@ -3,6 +3,32 @@ module Perry::Test
     read_with :test
   end
 
+
+  class FakeAdapterStackItem
+    @@output = []
+    def initialize(adapter, config={})
+      @adapter = adapter
+      @config = config
+    end
+
+    def call(options)
+      @@output << [self.class.name.split('::').last, @config, options]
+      @adapter.call(options).tap { |obj| @@output << (obj.is_a?(Array) ? obj.collect(&:class) : obj.class) }
+    end
+
+    def self.log(msg=nil)
+      if msg
+        @@output << log
+      else
+        @@output
+      end
+    end
+
+    def self.reset
+      @@output = []
+    end
+  end
+
   module Wearhouse
     class Widget < Perry::Test::Base
       attributes :string, :integer, :float, :text

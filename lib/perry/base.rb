@@ -95,9 +95,7 @@ class Perry::Base
     protected
 
     def fetch_records(relation)
-      self.read_adapter.read(:relation => relation).collect do |hash|
-        self.new_from_data_store(hash)
-      end.compact.tap do |result|
+      self.read_adapter.call(:read, :relation => relation).compact.tap do |result|
         eager_load_associations(result, relation)
       end
     end
@@ -171,6 +169,11 @@ class Perry::Base
       self.scoped_methods ||= []
       self.scoped_methods.last
     end
+
+    # def add_processor(processor, config={})
+    #   @@processors ||= []
+    #   @@processors << [processor, config]
+    # end
 
     private
 

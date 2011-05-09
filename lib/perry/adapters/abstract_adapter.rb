@@ -84,16 +84,21 @@ class Perry::Adapters::AbstractAdapter
 
   # runs the adapter in the specified type mode -- designed to work with the middleware stack
   def call(mode, options)
-    @stack ||= self.middlewares.reverse.inject(self.method(mode)) do |below, (above_klass, above_config)|
+    @stack ||= self.stack_items.inject(self.method(mode)) do |below, (above_klass, above_config)|
       above_klass.new(below, above_config)
     end
 
     @stack.call(options)
   end
 
-  # Return an array of all middlewares
+  # Return an array of added middlewares
   def middlewares
     self.config[:middlewares] || []
+  end
+
+  # Return an array of added processors
+  def processors
+    self.config[:processors] || []
   end
 
   # Abstract read method -- overridden by subclasses
@@ -122,7 +127,11 @@ class Perry::Adapters::AbstractAdapter
     @@registered_adapters[name.to_sym] = self
   end
 
-  private
+  protected
+
+  def stack_items
+    (processors + [ModelBuilder] + middlewares).reverse
+  end
 
   # TRP: Run each configure block in order of class hierarchy / definition and merge the results.
   def build_configuration
@@ -142,8 +151,33 @@ class Perry::Adapters::AbstractAdapter
       self.middlewares << [klass, config]
     end
 
+    def add_processor(klass, config={})
+      self.processors ||= []
+      self.processors << [klass, config]
+    end
+
     def to_hash
       marshal_dump
+    end
+
+  end
+
+  class ModelBuilder
+
+    def initialize(adapter, config={})
+      @adapter = adapter
+      @config = config
+    end
+
+    def call(options)
+      result = @adapter.call(options)
+      if options[:relation]
+        result.collect do |attributes|
+          options[:relation].klass.new_from_data_store(attributes)
+        end
+      else
+        result
+      end
     end
 
   end
