@@ -11,17 +11,13 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
       @adapter.reset
       @adapter.data = { :id => 1, :name => "Foo", :expire_at => Time.now + 60 }
 
-      @config = {
-        :expires => :expire_at,
-        :record_count_threshold => 5
-      }
+      @config = { :record_count_threshold => 5 }
       @middleware = Perry::Middlewares::CacheRecords.new(@adapter, @config)
       @middleware.reset_cache_store
     end
 
     context "configuration" do
-      should "set the configuration variables" do
-        assert_equal @config[:expires], @middleware.send(:expires)
+      should "set the configuration variable(s)" do
         assert_equal @config[:record_count_threshold], @middleware.send(:record_count_threshold)
       end
     end
@@ -38,7 +34,6 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
     end
 
     should "rerun query if cache is expired" do
-      @middleware.expires = nil
       @middleware.reset_cache_store(0)
       @middleware.call(@options)
       @middleware.call(@options)

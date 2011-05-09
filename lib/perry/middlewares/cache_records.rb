@@ -5,7 +5,7 @@ require 'perry/middlewares/cache_records/scopes'
 require 'digest/md5'
 
 class Perry::Middlewares::CacheRecords
-  attr_accessor :expires, :record_count_threshold
+  attr_accessor :record_count_threshold
 
   # TRP: Default to a 5 minute cache
   DEFAULT_LONGEVITY = 5*60
@@ -21,7 +21,6 @@ class Perry::Middlewares::CacheRecords
 
   def initialize(adapter, config={})
     @adapter = adapter
-    self.expires = config[:expires]
     self.record_count_threshold = config[:record_count_threshold]
   end
 
