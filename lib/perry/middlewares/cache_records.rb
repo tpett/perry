@@ -41,14 +41,18 @@ class Perry::Middlewares::CacheRecords
       cached_values
     else
       fresh_values = @adapter.call(options)
-      if self.record_count_threshold && fresh_values.size <= self.record_count_threshold
-        self.cache_store.write(key, fresh_values)
-      end
+      self.cache_store.write(key, fresh_values) if should_store_in_cache?(fresh_values)
       fresh_values
     end
   end
 
+  protected
+
   def key_for_query(query_hash)
     Digest::MD5.hexdigest(self.class.to_s + query_hash.to_a.sort { |a,b| a.to_s.first <=> b.to_s.first }.inspect)
+  end
+
+  def should_store_in_cache?(fresh_values)
+    self.record_count_threshold && fresh_values.size <= self.record_count_threshold
   end
 end
