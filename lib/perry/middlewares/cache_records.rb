@@ -1,6 +1,7 @@
 class Perry::Middlewares::CacheRecords; end
 require 'perry/middlewares/cache_records/store'
 require 'perry/middlewares/cache_records/entry'
+require 'perry/middlewares/cache_records/scopes'
 require 'digest/md5'
 
 class Perry::Middlewares::CacheRecords

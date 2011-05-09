@@ -83,6 +83,26 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
         assert_equal 1, @adapter.calls.size
       end
     end
+
+    context "scopes" do
+      setup do
+        @model = @klass
+        @model.class_eval do
+          include Perry::Middlewares::CacheRecords::Scopes
+        end
+      end
+
+      [:fresh, :reset_cache].each do |scope_name|
+        should "define a :#{scope_name} scope" do
+          assert @model.respond_to?(scope_name)
+        end
+
+        should "be present in the relation's :modifiers_value when :#{scope_name} scope is used" do
+          relation = @model.send(scope_name)
+          assert relation.modifiers_value.has_key?(scope_name)
+        end
+      end
+    end
   end
 
   context "CacheRecords::Store instance" do

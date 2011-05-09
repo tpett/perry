@@ -13,7 +13,7 @@ module Perry::Modifiers
   # to perry (such as a data server or a webservice call) whose behavior is undefined with respect
   # to these additional parameters/
   #
-  # See also 'perry/middlewares/cache_records/scopes' for examples of how to use the modifiers
+  # See also 'perry/middlewares/cache_records/scopes.rb' for examples of how to use the modifiers
   # pseudo-query method.
   def modifiers(value={})
     clone.tap do |r|
