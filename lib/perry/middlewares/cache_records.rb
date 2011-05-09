@@ -1,10 +1,11 @@
 class Perry::Middlewares::CacheRecords; end
 require 'perry/middlewares/cache_records/store'
 require 'perry/middlewares/cache_records/entry'
+require 'perry/middlewares/cache_records/scopes'
 require 'digest/md5'
 
 class Perry::Middlewares::CacheRecords
-  attr_accessor :expires, :record_count_threshold
+  attr_accessor :record_count_threshold
 
   # TRP: Default to a 5 minute cache
   DEFAULT_LONGEVITY = 5*60
@@ -20,29 +21,38 @@ class Perry::Middlewares::CacheRecords
 
   def initialize(adapter, config={})
     @adapter = adapter
-    self.expires = config[:expires]
     self.record_count_threshold = config[:record_count_threshold]
   end
 
   def call(options)
     relation = options[:relation]
+    modifiers = relation.modifiers_value
     query = relation.to_hash
+
+    reset_cache_store if modifiers[:reset_cache]
+    get_fresh = modifiers[:fresh]
+
     key = key_for_query(query)
     cached_values = self.cache_store.read(key)
 
-    if cached_values #&& !get_fresh
+
+    if cached_values && !get_fresh
       @adapter.log(query, "CACHE #{relation.klass.name}")
       cached_values
     else
       fresh_values = @adapter.call(options)
-      if self.record_count_threshold && fresh_values.size <= self.record_count_threshold
-        self.cache_store.write(key, fresh_values)
-      end
+      self.cache_store.write(key, fresh_values) if should_store_in_cache?(fresh_values)
       fresh_values
     end
   end
 
+  protected
+
   def key_for_query(query_hash)
     Digest::MD5.hexdigest(self.class.to_s + query_hash.to_a.sort { |a,b| a.to_s.first <=> b.to_s.first }.inspect)
+  end
+
+  def should_store_in_cache?(fresh_values)
+    self.record_count_threshold && fresh_values.size <= self.record_count_threshold
   end
 end

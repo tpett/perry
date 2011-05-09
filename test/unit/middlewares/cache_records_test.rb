@@ -4,23 +4,20 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
 
   context "cache records middleware" do
     setup do
-      @relation = Perry::Test::Base.send(:relation)
+      @klass = Class.new(Perry::Test::Base)
+      @relation = @klass.send(:relation)
       @options = { :relation => @relation }
       @adapter = Perry::Test::MiddlewareAdapter.new(:read, {})
       @adapter.reset
       @adapter.data = { :id => 1, :name => "Foo", :expire_at => Time.now + 60 }
 
-      @config = {
-        :expires => :expire_at,
-        :record_count_threshold => 5
-      }
+      @config = { :record_count_threshold => 5 }
       @middleware = Perry::Middlewares::CacheRecords.new(@adapter, @config)
       @middleware.reset_cache_store
     end
 
     context "configuration" do
-      should "set the configuration variables" do
-        assert_equal @config[:expires], @middleware.send(:expires)
+      should "set the configuration variable(s)" do
         assert_equal @config[:record_count_threshold], @middleware.send(:record_count_threshold)
       end
     end
@@ -37,28 +34,21 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
     end
 
     should "rerun query if cache is expired" do
-      @middleware.expires = nil
       @middleware.reset_cache_store(0)
       @middleware.call(@options)
       @middleware.call(@options)
       assert_equal 2, @adapter.calls.size
     end
 
-    # TODO
+    # TODO: we currently don't have a way to do this now that caching is handled in a middleware
     should_eventually "set fresh to false if data is from cache and to true if data is not from cache" do
       assert @model.first.fresh
       assert !@model.first.fresh
     end
 
-    # TODO
-    should_eventually "rerun query if fresh scope called" do
-      assert_not_equal @model.fresh.first, @model.fresh.first
-      assert_equal 2, @adapter.calls.size
-    end
-
-    # TODO
-    should_eventually "rerun query if :fresh finder option passed" do
-      assert_not_equal @model.first(:fresh => true), @model.first(:fresh => true)
+    should "rerun query if fresh modifier is used" do
+      options = { :relation => @relation.modifiers(:fresh => true) }
+      assert_equal @middleware.call(options), @middleware.call(options)
       assert_equal 2, @adapter.calls.size
     end
 
@@ -76,20 +66,48 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
         assert @middleware.cache_store.kind_of?(Perry::Middlewares::CacheRecords::Store)
       end
 
-      # TODO
-      should_eventually "be resetabble" do
-        @extend_model = Class.new(@model)
-        @extend_model.first
-        @model.reset_cache_store
-        @extend_model.first
+      should "be resetabble" do
+        @middleware.call(@options)
+        @middleware.call(:relation => @relation.modifiers(:reset_cache => true))
         assert_equal 2, @adapter.calls.size
       end
 
-      # TODO: causes other tests to fail when this test is run
-      should_eventually "be persistent across caching middleware instances" do
+      should "be shared across caching middleware instances" do
         @middleware.call(@options)
         @other_middleware.call(@options)
         assert_equal 1, @adapter.calls.size
+      end
+    end
+
+    context "scopes" do
+      setup do
+        @model = @klass
+        @model.class_eval do
+          include Perry::Middlewares::CacheRecords::Scopes
+        end
+      end
+
+      [:fresh, :reset_cache].each do |scope_name|
+        should "define a :#{scope_name} scope" do
+          assert @model.respond_to?(scope_name)
+        end
+
+        should "be present in the relation's :modifiers_value when :#{scope_name} scope is used" do
+          relation = @model.send(scope_name)
+          assert relation.modifiers_value.has_key?(scope_name)
+        end
+      end
+
+      should "set fresh_value to true by default" do
+        assert !@relation.modifiers_value[:fresh]
+        @relation = @relation.fresh
+        assert @relation.modifiers_value[:fresh]
+      end
+
+      should "not set fresh_value to true if fresh(false) passed" do
+        assert !@relation.modifiers_value[:fresh]
+        @relation = @relation.fresh(false)
+        assert !@relation.modifiers_value[:fresh]
       end
     end
   end
