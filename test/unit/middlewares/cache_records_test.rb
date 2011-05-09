@@ -97,6 +97,18 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
           assert relation.modifiers_value.has_key?(scope_name)
         end
       end
+
+      should "set fresh_value to true by default" do
+        assert !@relation.modifiers_value[:fresh]
+        @relation = @relation.fresh
+        assert @relation.modifiers_value[:fresh]
+      end
+
+      should "not set fresh_value to true if fresh(false) passed" do
+        assert !@relation.modifiers_value[:fresh]
+        @relation = @relation.fresh(false)
+        assert !@relation.modifiers_value[:fresh]
+      end
     end
   end
 

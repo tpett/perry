@@ -265,34 +265,6 @@ class Perry::RelationTest < Test::Unit::TestCase
       end
     end
 
-    context "fresh method" do
-      should_eventually "force relation to refetch records if it has already run when true passed" do
-        @relation.to_a
-        @relation.to_a
-        @relation.fresh.to_a
-        assert_equal 2, @adapter.calls.size
-      end
-
-      should_eventually"set fresh_value to true by default" do
-        assert !@relation.fresh_value
-        @relation = @relation.fresh
-        assert @relation.fresh_value
-      end
-
-      should_eventually "not set fresh_value to true if fresh(false) passed" do
-        assert !@relation.fresh_value
-        @relation = @relation.fresh(false)
-        assert !@relation.fresh_value
-      end
-
-      should_eventually "not force refetch records when fresh(false) called" do
-        @relation.to_a
-        @relation.to_a
-        @relation.fresh(false).to_a
-        assert_equal 1, @adapter.calls.size
-      end
-    end
-
     context "search method" do
       # TODO: Pull this code out of this gem and
     end
