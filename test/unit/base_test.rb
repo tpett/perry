@@ -69,23 +69,6 @@ class Perry::BaseTest < Test::Unit::TestCase
       end
     end
 
-    context "configure_cacheable method" do
-      setup do
-        @expires = Time.now
-        @model.send(:configure_cacheable, :expires => @expires, :record_count_threshold => 5)
-      end
-
-      should "include Perry::Cacheable module" do
-        assert @model.ancestors.include?(Perry::Cacheable)
-      end
-
-      should "set configuration vars" do
-        assert_equal @expires, @model.send(:cache_expires)
-        assert_equal 5, @model.send(:cache_record_count_threshold)
-      end
-    end
-
-
     # TRP: new_record flag control
     should "set new_record true when a new object is created directly" do
       assert @model.new.new_record?
@@ -111,6 +94,24 @@ class Perry::BaseTest < Test::Unit::TestCase
         assert_nil Perry::Test::Wearhouse::Widget.new_from_data_store(nil)
       end
     end
+
+    # context "add_processor class method" do
+    #   setup do
+    #     @processor = Class.new
+    #   end
+
+    #   should "accept a class and optional config options" do
+    #     method = @model.method(:add_processor)
+    #     assert method
+    #     assert_equal -2, method.arity
+    #   end
+
+    #   should "add to list of processors" do
+    #     @model.send(:add_processor, @processor, { :foo => :bar })
+    #     processors = @model.send(:class_variable_get, :@@processors)
+    #     assert_equal [@processor, { :foo => :bar }], processors.last
+    #   end
+    # end
 
     #-----------------------------------------
     # TRP: Scopes
@@ -278,64 +279,6 @@ class Perry::BaseTest < Test::Unit::TestCase
         assert instance.respond_to?(:a=)
         assert instance.respond_to?(:b=)
       end
-    end
-
-
-    #-----------------------------------------
-    # TRP: Cacheable
-    #-----------------------------------------
-    context "with cacheable set" do
-      setup do
-        @model.send :attributes, :id, :name, :expire_at
-        @model.send :configure_cacheable, :record_count_threshold => 3, :expires => :expire_at
-        @adapter.data = { :id => 1, :name => "Foo", :expire_at => Time.now + 60 }
-      end
-
-      should "only execute one call for two duplicate requests" do
-        assert_equal @model.first, @model.first
-        assert_equal 1, @adapter.calls.size
-      end
-
-      should "only cache if the record count is within threshold" do
-        @model.limit(4).all
-        @model.limit(4).all
-        assert_equal 2, @adapter.calls.size
-      end
-
-      should "rerun query if cache is expired" do #should "use :expires option attribute on fresh data to set expire time if :expires option present"
-        @adapter.data = @adapter.data.merge(:expire_at => Time.now)
-        @model.first
-        @model.first
-        assert_equal 2, @adapter.calls.size
-      end
-
-      should "set fresh to false if data is from cache and to true if data is not from cache" do
-        assert @model.first.fresh
-        assert !@model.first.fresh
-      end
-
-      should "rerun query if fresh scope called" do
-        assert_not_equal @model.fresh.first, @model.fresh.first
-        assert_equal 2, @adapter.calls.size
-      end
-
-      should "rerun query if :fresh finder option passed" do
-        assert_not_equal @model.first(:fresh => true), @model.first(:fresh => true)
-        assert_equal 2, @adapter.calls.size
-      end
-
-      context "reset_cache_store method" do
-
-        should "clear out cache store" do
-          @extend_model = Class.new(@model)
-          @extend_model.first
-          @model.reset_cache_store
-          @extend_model.first
-          assert_equal 2, @adapter.calls.size
-        end
-
-      end
-
     end
 
 

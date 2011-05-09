@@ -4,7 +4,7 @@ module Perry::AssociationPreload
     def eager_load_associations(original_results, relation)
       relation.includes_values.each do |association_id|
         association = self.defined_associations[association_id.to_sym]
-        force_fresh = relation.fresh_value
+        force_fresh = relation.modifiers_value[:fresh]
 
         unless association
           raise(
@@ -28,7 +28,7 @@ module Perry::AssociationPreload
           fks = original_results.collect { |record| record.send(association.primary_key) }.compact
 
           # build conditions for query and run it
-          pre_records = association.target_klass.where(association.foreign_key => fks).all(:fresh => force_fresh)
+          pre_records = association.target_klass.where(association.foreign_key => fks).all(:modifiers => { :fresh => force_fresh })
 
           # inject eager loaded records into original query records
           original_results.each do |record|
@@ -55,7 +55,7 @@ module Perry::AssociationPreload
         when :belongs_to
           fks = original_results.collect { |record| record.send(association.foreign_key) }.compact
 
-          pre_records = association.target_klass.where(association.primary_key => fks).all(:fresh => force_fresh)
+          pre_records = association.target_klass.where(association.primary_key => fks).all(:modifiers => { :fresh => force_fresh })
 
           original_results.each do |record|
             fk = record.send(association.foreign_key)

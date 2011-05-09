@@ -37,7 +37,7 @@ module Perry::FinderMethods
     relation = clone
     return relation unless options
 
-    [:joins, :limit, :offset, :order, :select, :group, :having, :from, :fresh, :includes].each do |finder|
+    Perry::Relation::QUERY_METHODS.each do |finder|
       relation = relation.send(finder, options[finder]) if options[finder]
     end
 
@@ -49,6 +49,8 @@ module Perry::FinderMethods
     relation = relation.search(options[:search]) if options.has_key?(:search)
 
     relation = relation.sql(options[:sql]) if options.has_key?(:sql)
+
+    relation = relation.modifiers(options[:modifiers]) if options.has_key?(:modifiers)
 
     relation
   end

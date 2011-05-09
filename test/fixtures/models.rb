@@ -6,6 +6,32 @@ module Perry::Test
     end
   end
 
+
+  class FakeAdapterStackItem
+    @@output = []
+    def initialize(adapter, config={})
+      @adapter = adapter
+      @config = config
+    end
+
+    def call(options)
+      @@output << [self.class.name.split('::').last, @config, options]
+      @adapter.call(options).tap { |obj| @@output << (obj.is_a?(Array) ? obj.collect(&:class) : obj.class) }
+    end
+
+    def self.log(msg=nil)
+      if msg
+        @@output << log
+      else
+        @@output
+      end
+    end
+
+    def self.reset
+      @@output = []
+    end
+  end
+
   module Wearhouse
     class Widget < Perry::Test::Base
       attributes :string, :integer, :float, :text
@@ -79,7 +105,8 @@ module Perry::Test
 
     class Person < Perry::Test::Base
       attributes :id, :name, :manager_id
-      configure_cacheable
+      # TODO: add caching middleware
+      #configure_cacheable
       belongs_to :manager, :class_name => "Perry::Test::Blog::Person", :foreign_key => :manager_id
       has_many :authored_comments, :class_name => "Perry::Test::Blog::Comment", :foreign_key => :person_id
       has_many :articles, :class_name => "Perry::Test::Blog::Article", :foreign_key => :author_id

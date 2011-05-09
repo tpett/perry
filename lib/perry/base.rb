@@ -3,7 +3,6 @@ require 'perry/errors'
 require 'perry/associations/contains'
 require 'perry/associations/external'
 require 'perry/association_preload'
-require 'perry/cacheable'
 require 'perry/serialization'
 require 'perry/relation'
 require 'perry/scopes'
@@ -20,10 +19,9 @@ class Perry::Base
   attr_accessor :attributes, :new_record, :read_options, :write_options
   alias :new_record? :new_record
 
-  class_inheritable_accessor :read_adapter, :write_adapter, :cacheable,
+  class_inheritable_accessor :read_adapter, :write_adapter,
     :defined_attributes, :scoped_methods, :defined_associations
 
-  self.cacheable = false
   self.defined_associations = {}
   self.defined_attributes = []
 
@@ -61,7 +59,8 @@ class Perry::Base
 
     delegate :find, :first, :all, :search, :apply_finder_options, :to => :scoped
     delegate :select, :group, :order, :joins, :where, :having, :limit, :offset,
-      :from, :fresh, :to => :scoped
+      :from, :to => :scoped
+    delegate :modifiers, :to => :scoped
 
     def new_from_data_store(hash)
       if hash.nil?
@@ -96,9 +95,7 @@ class Perry::Base
     protected
 
     def fetch_records(relation)
-      self.read_adapter.call(:read, :relation => relation).collect do |hash|
-        self.new_from_data_store(hash)
-      end.compact.tap do |result|
+      self.read_adapter.call(:read, :relation => relation).compact.tap do |result|
         # eager_load_associations(result, relation)
       end
     end
@@ -139,13 +136,6 @@ class Perry::Base
       end
     end
 
-    def configure_cacheable(options={})
-      unless cacheable
-        self.send(:include, Perry::Cacheable)
-        self.enable_caching(options)
-      end
-    end
-
     # TRP: Used to declare attributes -- only attributes that are declared will be available
     def attributes(*attributes)
       return self.defined_attributes if attributes.empty?
@@ -179,6 +169,11 @@ class Perry::Base
       self.scoped_methods ||= []
       self.scoped_methods.last
     end
+
+    # def add_processor(processor, config={})
+    #   @@processors ||= []
+    #   @@processors << [processor, config]
+    # end
 
     private
 
