@@ -1,3 +1,5 @@
+require 'perry/persistence/response'
+
 module Perry::Persistence
 
   module ClassMethods
