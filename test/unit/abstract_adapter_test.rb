@@ -71,7 +71,7 @@ class Perry::AbstractAdapterTest < Test::Unit::TestCase
         assert_equal 2, @abstract.instance_method('call').arity
       end
 
-      should "call stack items in order: processors, object builder, middlewares" do
+      should "call stack items in order: processors, model bridge, middlewares" do
         Perry::Test::FakeAdapterStackItem.reset
         class MiddlewareA < Perry::Test::FakeAdapterStackItem; end
         class MiddlewareB < Perry::Test::FakeAdapterStackItem; end
@@ -204,43 +204,6 @@ class Perry::AbstractAdapterTest < Test::Unit::TestCase
         assert_equal({ :foo => :bar }, conf.to_hash)
       end
 
-    end
-
-  end
-
-  context "ModelBuilder class" do
-    setup do
-      @builder = Perry::Adapters::AbstractAdapter::ModelBuilder
-
-      class FakeAdapter
-        def call(options)
-          [ { :id => 1 } ]
-        end
-      end
-
-      @stack = @builder.new(FakeAdapter.new)
-      @relation = Perry::Test::Blog::Site.scoped
-    end
-
-    should "have a initialize method and call method" do
-      assert_equal -2, @builder.instance_method(:initialize).arity
-      assert_equal 1, @builder.instance_method(:call).arity
-    end
-
-    should "call rest of stack and initialize the returned records if query options contains :relation" do
-      result = @stack.call(:relation => @relation)
-      assert_equal 1, result.size
-      assert_equal @relation.klass, result.first.class
-    end
-
-    should "set new_record? to false on new records" do
-      result = @stack.call(:relation => @relation)
-      assert !result.first.new_record?
-    end
-
-    should "be no-op if does not contain :relation" do
-      result = @stack.call({})
-      assert_equal [ { :id => 1 } ], result
     end
 
   end

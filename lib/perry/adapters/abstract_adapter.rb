@@ -180,7 +180,7 @@ class Perry::Adapters::AbstractAdapter
   protected
 
   def stack_items
-    (processors + [ModelBuilder] + middlewares).reverse
+    (processors + [Perry::Middlewares::ModelBridge] + middlewares).reverse
   end
 
   # TRP: Run each configure block in order of class hierarchy / definition and merge the results.
@@ -208,26 +208,6 @@ class Perry::Adapters::AbstractAdapter
 
     def to_hash
       marshal_dump
-    end
-
-  end
-
-  class ModelBuilder
-
-    def initialize(adapter, config={})
-      @adapter = adapter
-      @config = config
-    end
-
-    def call(options)
-      result = @adapter.call(options)
-      if options[:relation]
-        result.collect do |attributes|
-          options[:relation].klass.new_from_data_store(attributes)
-        end
-      else
-        result
-      end
     end
 
   end
