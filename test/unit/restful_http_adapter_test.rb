@@ -75,6 +75,77 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
       assert FakeWeb.last_request.body.match(/myapikey/)
     end
 
+    [:post, :put, :delete].each do |http_method|
+      new_record = http_method == :put
+      test_method = http_method == :delete ? :delete : :write
+
+      context "##{test_method} method for #{new_record ? 'a new' : 'an existing'} record" do
+        setup do
+          @model.class_eval do
+            configure_write do |config|
+              config.format = '.json'
+            end
+          end
+          @instance = @model.new
+
+          case http_method
+          when :post
+            @uri = 'http://test.local/foo.json'
+          when :put, :delete
+            @instance.id = 1
+            @instance.new_record = false
+            @uri = "http://test.local/foo/#{@instance.id}.json"
+          end
+
+          @adapter_method = test_method
+        end
+
+        should "return a Response object" do
+          FakeWeb.register_uri(http_method, @uri, :body => 'OK')
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          assert @response.is_a?(Perry::Persistence::Response)
+        end
+
+        should "set Response#status to HTTP status" do
+          FakeWeb.register_uri(http_method, @uri, :body => 'OK')
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          assert_equal 200, @response.status
+        end
+
+        should "set Response#success to true if status indicates success" do
+          FakeWeb.register_uri(http_method, @uri, :body => 'OK')
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          assert @response.success
+        end
+
+        should "set Response#success to false if status indicates failure or is unkown" do
+          FakeWeb.register_uri(http_method, @uri, :body => 'oops!', :status => [500, 'Error'])
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          assert !@response.success
+        end
+
+        should "set Response#meta to a hash of the HTTP response headers" do
+          FakeWeb.register_uri(http_method, @uri, :response => mock_http_response('json_response'))
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          headers = { 'server' => 'test', 'content-type' => 'application/json' }
+          assert_equal headers, @response.meta
+        end
+
+        should "set Response#raw to the unmodified HTTP response body" do
+          fake_response = mock_http_response('json_response')
+          FakeWeb.register_uri(http_method, @uri, :response => fake_response)
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          assert_equal fake_response.split(/\r\n\r\n/)[1], @response.raw
+        end
+
+        should "set Response#format to the correct format" do
+          FakeWeb.register_uri(http_method, @uri, :body => 'OK')
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          assert_equal '.json', @response.format
+        end
+      end
+    end
+
   end
 
 end

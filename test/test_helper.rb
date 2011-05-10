@@ -22,3 +22,7 @@ require 'test/fixtures/models'
 
 # Pull in factories
 require 'test/factories'
+
+def mock_http_response(name_without_ext)
+  File.open(File.join('test/fixtures', "#{name_without_ext}.txt")) { |io| io.read }
+end

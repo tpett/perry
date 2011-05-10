@@ -56,7 +56,14 @@ module Perry::Adapters
       self.log(params, "#{method.to_s.upcase} #{req_uri}") do
         @last_response = Net::HTTP.new(req_uri.host, req_uri.port).start { |http| http.request(request) }
       end
-      parse_response_code(@last_response)
+
+      Perry::Persistence::Response.new.tap do |response|
+        response.status = @last_response.code.to_i
+        response.success = parse_response_code(@last_response)
+        response.meta = http_headers(@last_response).to_hash
+        response.raw = @last_response.body
+        response.format = config[:format]
+      end
     end
 
     def parse_response_code(response)
@@ -94,6 +101,12 @@ module Perry::Adapters
       end
 
       uri
+    end
+
+    def http_headers(response)
+      response.to_hash.inject({}) do |clean_headers, (key, values)|
+        clean_headers.merge(key => values.length > 1 ? values : values.first)
+      end
     end
 
   end
