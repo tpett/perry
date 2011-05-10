@@ -11,6 +11,7 @@ class Perry::AdapterStackTest < Test::Unit::TestCase
 
       @model = Class.new(Perry::Test::Base)
       @model.class_eval do
+        attributes :id
         configure_read do |config|
           config.add_middleware MiddlewareA
           config.add_processor ProcessorA

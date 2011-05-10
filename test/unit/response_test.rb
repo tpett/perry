@@ -26,5 +26,13 @@ class Perry::ResponseTest < Test::Unit::TestCase
         assert_equal attr_value, response.send(attr_name)
       end
     end
+
+    should "always return a hash for :model_attributes" do
+      assert_equal({}, @response.model_attributes)
+    end
+
+    should "always return an array for :errors" do
+      assert_equal [], @response.errors
+    end
   end
 end

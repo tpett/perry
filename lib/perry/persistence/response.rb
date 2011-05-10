@@ -8,5 +8,13 @@ module Perry::Persistence
         self.send("#{attr}=", attrs[attr])
       end
     end
+
+    def model_attributes
+      @model_attributes ||= {}
+    end
+
+    def errors
+      @errors ||= []
+    end
   end
 end

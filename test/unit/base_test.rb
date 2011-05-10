@@ -37,38 +37,6 @@ class Perry::BaseTest < Test::Unit::TestCase
       end
     end
 
-    context "persistence methods" do
-      setup do
-        @model.class_eval do
-          attributes :a, :b, :c
-          write_with :test
-
-          configure_write do |config|
-            config.post_body_wrapper = "test"
-          end
-        end
-      end
-
-      should "require perry/persistence if needed" do
-        assert defined?(Perry::Persistence)
-      end
-
-      should "include Perry::Mutable module" do
-        assert @model.ancestors.include?(Perry::Persistence)
-      end
-
-      should "define writers for attributes that have been declared" do
-        instance = @model.new
-        assert instance.respond_to?(:a=)
-        assert instance.respond_to?(:b=)
-        assert instance.respond_to?(:c=)
-      end
-
-      should "set config options to adapter config" do
-        assert @model.write_adapter.config.keys.include?(:post_body_wrapper)
-      end
-    end
-
     # TRP: new_record flag control
     should "set new_record true when a new object is created directly" do
       assert @model.new.new_record?
@@ -279,51 +247,6 @@ class Perry::BaseTest < Test::Unit::TestCase
         assert instance.respond_to?(:a=)
         assert instance.respond_to?(:b=)
       end
-    end
-
-
-    #-----------------------------------------
-    # TRP: Persistence
-    #-----------------------------------------
-    context "persistence methods" do
-      setup do
-        @model.class_eval do
-          attributes :a, :b
-          write_with :test
-        end
-        @object = @model.new
-      end
-
-      should "call write method on the write_adapter when save called" do
-        assert @object.save
-        assert_equal @object, @model.write_adapter.last_call.last
-      end
-
-      should "call delete method on the write_adapter when delete called" do
-        @object.new_record = false
-        assert @object.delete
-        assert_equal @object, @model.write_adapter.last_call.last
-      end
-
-      should "not call delete method on the write adapter when new_record? is true" do
-        assert !@object.delete
-        assert !@model.write_adapter.last_call
-      end
-
-      should "set attribtues and save on update_attributes" do
-        obj = @model.new_from_data_store(:a => 'a', :b => 'b')
-        assert obj.update_attributes(:b => 'c')
-        assert_equal obj, @model.write_adapter.last_call.last
-        assert_equal 'a', obj.a
-        assert_equal 'c', obj.b
-      end
-
-      should "raise exception if save! or update_attributes! called and failed" do
-        @object.write_adapter.writes_return false
-        assert_raises(Perry::RecordNotSaved) { @object.save! }
-        assert_raises(Perry::RecordNotSaved) { @object.update_attributes!({}) }
-      end
-
     end
 
 

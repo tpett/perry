@@ -26,7 +26,7 @@ module Perry::Persistence
     end
 
     def save
-      write_adapter.call(:write, :object => self)
+      write_adapter.call(:write, :object => self).success
     end
 
     def save!
@@ -43,9 +43,13 @@ module Perry::Persistence
     end
 
     def destroy
-      write_adapter.call(:delete, :object => self) unless self.new_record?
+      write_adapter.call(:delete, :object => self).success unless self.new_record?
     end
     alias :delete :destroy
+
+    def reload
+      self.attributes = self.class.where(:id => self.id).first.attributes
+    end
 
   end
 

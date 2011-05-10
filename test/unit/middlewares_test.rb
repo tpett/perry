@@ -12,8 +12,9 @@ class Perry::MiddlewaresTest < Test::Unit::TestCase
   AVAILABLE_MIDDLEWARES.each do |middleware_class|
     context "#{middleware_class} middleware" do
       setup do
-        @read_options = { :relation => Perry::Test::Base.send(:relation) }
-        @write_options = { :object => Perry::Test::Base.new }
+        @klass = Class.new(Perry::Test::SimpleModel)
+        @read_options = { :relation => @klass.send(:relation) }
+        @write_options = { :object => @klass.new }
         @adapter_class = Perry::Test::MiddlewareAdapter
         @middleware_class = Perry::Middlewares.const_get(middleware_class)
         @middleware = @middleware_class.new(@adapter_class.new(:read, {}))

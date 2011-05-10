@@ -15,8 +15,10 @@ class Perry::Base
   include Perry::Serialization
   include Perry::Scopes
 
-  attr_accessor :attributes, :new_record, :read_options, :write_options
+  attr_accessor :attributes, :new_record, :saved, :read_options, :write_options
   alias :new_record? :new_record
+  alias :saved? :saved
+  alias :persisted? :saved?
 
   class_inheritable_accessor :read_adapter, :write_adapter,
     :defined_attributes, :scoped_methods, :defined_associations

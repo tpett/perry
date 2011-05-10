@@ -7,7 +7,7 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
   #-----------------------------------------
   context "restful http adapter" do
     setup do
-      @model = Class.new(Perry::Test::Base)
+      @model = Class.new(Perry::Test::SimpleModel)
       @model.class_eval do
         attributes :id, :a, :b, :c
         write_with :restful_http

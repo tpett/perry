@@ -6,6 +6,12 @@ module Perry::Test
     end
   end
 
+  class SimpleModel < Perry::Test::Base
+    attributes :id
+    read_with :test
+    write_with :test
+  end
+
 
   class FakeAdapterStackItem
     @@output = []
