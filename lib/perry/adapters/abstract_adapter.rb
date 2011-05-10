@@ -7,6 +7,34 @@ require 'perry/logger'
 # one or all of read, write, and/or delete.  They should also register themselves with a
 # unique name using the register_as class method.
 #
+# Adapters contain a stack of code that is executed on each request.  Here is a diagram of the basic
+# anatomy of the adaper stack:
+#
+#   +----------------+
+#   |   Perry::Base  |
+#   +----------------+
+#           |
+#   +----------------+
+#   |   Processors   |
+#   +----------------+
+#           |
+#   +----------------+
+#   |   ModelBridge  |
+#   +----------------+
+#           |
+#   +----------------+
+#   |   Middlewares  |
+#   +----------------+
+#           |
+#   +----------------+
+#   |     Adapter    |
+#   +----------------+
+#
+# Each request is routed through registred processors, the ModelBridge, and registered middlewares
+# before reaching the adapter.  After the adapter does its operation the return value passes through
+# each item in the stack allowing stack items to do both custom pre and post processing to every
+# request.
+#
 # == Configuration
 #
 # You can configure your adapters using the configure method on Perry::Base
@@ -50,6 +78,28 @@ require 'perry/logger'
 #   configure(:read) do |config|
 #     config.add_middleware(MyMiddleware, :config => 'var', :foo => 'bar')
 #   end
+#
+# == ModelBridge
+#
+# The ModelBridge is simply a middleware that is always installed.  It instantiates the records from
+# the data returned by the adapter.  It "bridges" the raw data to the mapped object.
+#
+# == Processors
+#
+# Much like middlewares, processors allow you to insert logic into the request stack.  The
+# differentiation is that processors are able to manipulate the instantiated objects rather than
+# just the raw data.  Processors have access to the objects immediately before passing the data back
+# to the model space.
+#
+# The interface for a processor is identical to that of a middleware.  The return value of the call
+# to adapter; however, is an array of Perry::Base objects rather than Hashes of attributes.
+#
+# Configuration is also very similar to middlewares:
+#
+#   configure(:read) do |config|
+#     config.add_processor(MyProcessor, :config => 'var', :foo => 'bar')
+#   end
+#
 #
 class Perry::Adapters::AbstractAdapter
   include Perry::Logger
