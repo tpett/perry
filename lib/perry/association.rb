@@ -52,8 +52,16 @@ module Perry::Association
     end
 
     def target_klass(object=nil)
+      eager_loading = object.is_a?(Array)
       if options[:polymorphic] && object
         poly_type = object.is_a?(Perry::Base) ? object.send("#{id}_type") : object
+      end
+
+      # This is an eager loading attempt
+      if eager_loading && !eager_loadable?
+        raise(Perry::AssociationPreloadNotSupported,
+              "This association cannot be eager loaded.  It has config with procs or it is a " +
+              "polymorphic belongs_to association.")
       end
 
       klass = if poly_type
@@ -92,9 +100,10 @@ module Perry::Association
     # TRP: Only eager loadable if association query does not depend on instance
     # data
     def eager_loadable?
-      Perry::Relation::FINDER_OPTIONS.inject(true) do |condition, key|
-        condition && !options[key].respond_to?(:call)
+      dynamic_config = Perry::Relation::FINDER_OPTIONS.inject(false) do |condition, key|
+        condition || options[key].respond_to?(:call)
       end
+      !dynamic_config && !(self.polymorphic? && self.is_a?(BelongsTo))
     end
 
     protected
@@ -154,8 +163,15 @@ module Perry::Association
     #  where(:id => source[:foo_id])
     #
     def scope(object)
-      if object[self.foreign_key]
-        base_scope(object).where(self.primary_key => object[self.foreign_key])
+      if object.is_a? Array
+        keys = object.collect(&self.foreign_key.to_sym)
+        keys = nil if keys.empty?
+      else
+        keys = object[self.foreign_key]
+      end
+      if keys
+        scope = base_scope(object)
+        scope.where(self.primary_key => keys)
       end
     end
 
@@ -192,13 +208,19 @@ module Perry::Association
     #   where(:parent_id => source[:id], :parent_type => source.class)
     #
     def scope(object)
-      return nil unless object[self.primary_key]
-      s = base_scope(object).where(self.foreign_key => object[self.primary_key])
-      if polymorphic?
-        s = s.where(
-          polymorphic_type => Perry::Base.base_class_name(object.class) )
+      if object.is_a? Array
+        keys = object.collect(&self.primary_key.to_sym)
+        keys = nil if keys.empty?
+        klass = object.first.class
+      else
+        keys = object[self.primary_key]
+        klass = object.class
       end
-      s
+      if keys
+        scope = base_scope(object).where(self.foreign_key => keys)
+        scope = scope.where(polymorphic_type => Perry::Base.base_class_name(klass)) if polymorphic?
+        scope
+      end
     end
 
     def polymorphic_type

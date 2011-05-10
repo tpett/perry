@@ -2,7 +2,7 @@ module Perry::Test
   class Base < Perry::Base
     read_with :test
     configure_read do |config|
-      config.add_middleware Perry::Middlewares::PreloadAssociations, {}
+      config.add_processor Perry::Processors::PreloadAssociations, {}
     end
   end
 

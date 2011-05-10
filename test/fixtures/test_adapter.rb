@@ -10,9 +10,9 @@ module Perry::Test
 
     def read(options)
       query = options[:relation].to_hash
-      @@calls << [:read, query]
+      @@calls << [:read, options, query]
       [].tap do |results|
-        (@@count || query[:limit] || 1).times { results << self.data }
+        (@@count || query[:limit] || 1).times { results << self.data(options[:relation].klass) }
       end.compact
     end
 
@@ -30,9 +30,9 @@ module Perry::Test
       @@calls.last
     end
 
-    def data
+    def data(klass)
       if @@data
-        @@last_result = @@data.dup.tap do |data_hash|
+        @@last_result = (@@data[klass] || @@data).dup.tap do |data_hash|
           data_hash.each do |key, value|
             data_hash[key] = value.call(@@last_result) if value.is_a?(Proc)
           end

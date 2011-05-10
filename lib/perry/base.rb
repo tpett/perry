@@ -2,17 +2,16 @@
 require 'perry/errors'
 require 'perry/associations/contains'
 require 'perry/associations/external'
-require 'perry/association_preload'
 require 'perry/serialization'
 require 'perry/relation'
 require 'perry/scopes'
 require 'perry/adapters'
 require 'perry/middlewares'
+require 'perry/processors'
 
 class Perry::Base
   include Perry::Associations::Contains
   include Perry::Associations::External
-  include Perry::AssociationPreload
   include Perry::Serialization
   include Perry::Scopes
 
@@ -59,7 +58,7 @@ class Perry::Base
 
     delegate :find, :first, :all, :search, :apply_finder_options, :to => :scoped
     delegate :select, :group, :order, :joins, :where, :having, :limit, :offset,
-      :from, :to => :scoped
+      :from, :includes, :to => :scoped
     delegate :modifiers, :to => :scoped
 
     def new_from_data_store(hash)
@@ -95,9 +94,7 @@ class Perry::Base
     protected
 
     def fetch_records(relation)
-      self.read_adapter.call(:read, :relation => relation).compact.tap do |result|
-        # eager_load_associations(result, relation)
-      end
+      self.read_adapter.call(:read, :relation => relation).compact
     end
 
     def read_with(adapter_type)

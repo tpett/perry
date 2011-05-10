@@ -10,7 +10,13 @@ class Perry::AssociationTest < Test::Unit::TestCase
     end
 
     context "eager_loadable? method" do
-      should "return true if options do not rely on instance data" do
+      setup do
+        @klass = Perry::Association::BelongsTo
+        @model = Class.new(Perry::Base)
+        @association = @klass.new(@model, 'foo')
+      end
+
+      should "return true if options do not rely on instance data and not polymorphic" do
         assert @association.eager_loadable?
       end
 
@@ -18,6 +24,11 @@ class Perry::AssociationTest < Test::Unit::TestCase
         Perry::Relation::FINDER_OPTIONS.each do |option|
           assert !@klass.new(@model, 'bar', option => lambda {}).eager_loadable?
         end
+      end
+
+      should "return false for polymorphic belongs to associations" do
+        association = @klass.new(@model, 'bar', :polymorphic => true)
+        assert !association.eager_loadable?
       end
     end
 
@@ -87,6 +98,7 @@ class Perry::AssociationTest < Test::Unit::TestCase
     context "scope method" do
       setup do
         @article = Perry::Test::Blog::Article
+        @comment = Perry::Test::Blog::Comment
       end
 
       should "return nil if no foreign_key present" do
@@ -99,11 +111,23 @@ class Perry::AssociationTest < Test::Unit::TestCase
         assert_equal(Perry::Relation, @article.defined_associations[:site].scope(record).class)
       end
 
-      should "the scope should have the options for he association query" do
+      should "the scope should have the options for the association query" do
         record = @article.new(:site_id => 1)
         assert_equal({ :id => 1 }, @article.defined_associations[:site].scope(record).where_values.first)
       end
 
+      should "composite array of primary keys into query if argument is an array of records" do
+        records = [1, 2, 3].collect { |i| @article.new(:site_id => i) }
+        assert_equal({ :id => [1, 2, 3] },
+                     @article.defined_associations[:site].scope(records).where_values.first)
+      end
+
+      should "raise AssociationPreloadNotSupported for polymotphic associations with arrays" do
+        records = [1, 2, 3].collect { |i| @comment.new(:parent_id => i) }
+        assert_raises(Perry::AssociationPreloadNotSupported) do
+          @comment.defined_associations[:parent].scope(records)
+        end
+      end
     end
 
   end
@@ -147,6 +171,7 @@ class Perry::AssociationTest < Test::Unit::TestCase
     context "scope method" do
       setup do
         @article = Perry::Test::Blog::Article
+        @site = Perry::Test::Blog::Site
       end
 
       should "return nil if no foreign_key present" do
@@ -170,6 +195,19 @@ class Perry::AssociationTest < Test::Unit::TestCase
         record = @article.new(:id => 1)
         assert_equal "text LIKE '%awesome%'",
           @article.defined_associations[:awesome_comments].scope(record).where_values.first
+      end
+
+      should "composite array of primary keys into query if argument is an array of records" do
+        records = [1, 2, 3].collect { |i| @article.new(:id => i) }
+        assert_equal([{ :parent_id => [1, 2, 3] }, { :parent_type => "Article" }],
+          @article.defined_associations[:comments].scope(records).where_values)
+      end
+
+      should "raise AssociationPreloadNotSupported if not an eager loadable association" do
+        records = [1, 2, 3].collect { |i| @site.new(:id => i) }
+        assert_raises(Perry::AssociationPreloadNotSupported) do
+          @site.defined_associations[:awesome_comments].scope(records)
+        end
       end
 
     end
