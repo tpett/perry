@@ -32,11 +32,11 @@ module Perry::Test
     end
   end
 
-  module Wearhouse
+  module Warehouse
     class Widget < Perry::Test::Base
       attributes :string, :integer, :float, :text
-      contains_many :subwidgets, :class_name => "Perry::Test::Wearhouse::Subwidget"
-      contains_one :schematic, :class_name => "Perry::Test::Wearhouse::Schematic"
+      contains_many :subwidgets, :class_name => "Perry::Test::Warehouse::Subwidget"
+      contains_one :schematic, :class_name => "Perry::Test::Warehouse::Schematic"
     end
 
     class Subwidget < Perry::Test::Base
@@ -47,8 +47,8 @@ module Perry::Test
     end
   end
 
-  module ExtendedWearhouse
-    class Schematic < Perry::Test::Wearhouse::Schematic; end
+  module ExtendedWarehouse
+    class Schematic < Perry::Test::Warehouse::Schematic; end
   end
 
   # TRP: Used for testing external associations

@@ -167,11 +167,6 @@ class Perry::Base
       self.scoped_methods.last
     end
 
-    # def add_processor(processor, config={})
-    #   @@processors ||= []
-    #   @@processors << [processor, config]
-    # end
-
     private
 
     def setup_adapter(mode, config)

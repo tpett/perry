@@ -77,7 +77,7 @@ class Perry::BaseTest < Test::Unit::TestCase
     context "new_from_data_store method" do
       setup do
         @attributes = Factory(:widget)
-        @widget = Perry::Test::Wearhouse::Widget.new_from_data_store(@attributes)
+        @widget = Perry::Test::Warehouse::Widget.new_from_data_store(@attributes)
       end
 
       should "instantiate a new object from hash" do
@@ -91,7 +91,7 @@ class Perry::BaseTest < Test::Unit::TestCase
       end
 
       should "return nil when nil is passed in" do
-        assert_nil Perry::Test::Wearhouse::Widget.new_from_data_store(nil)
+        assert_nil Perry::Test::Warehouse::Widget.new_from_data_store(nil)
       end
     end
 
@@ -487,7 +487,7 @@ class Perry::BaseTest < Test::Unit::TestCase
         @subwidgets = (1..5).collect { Factory(:subwidget).tap { |hsh| hsh.each_key { |k| hsh[k.to_s] = hsh.delete(k) } } }
         @schematic = Factory(:schematic).tap { |hsh| hsh.each_key { |k| hsh[k.to_s] = hsh.delete(k) } }
         @adapter.data = Factory(:widget).merge(:subwidgets => @subwidgets, :schematic => @schematic)
-        @widget = Perry::Test::Wearhouse::Widget.first
+        @widget = Perry::Test::Warehouse::Widget.first
       end
 
       context "contains_one association" do
@@ -497,7 +497,7 @@ class Perry::BaseTest < Test::Unit::TestCase
         end
 
         should "use the extended version of the associated class if available" do
-          assert_kind_of Perry::Test::ExtendedWearhouse::Schematic, @widget.schematic
+          assert_kind_of Perry::Test::ExtendedWarehouse::Schematic, @widget.schematic
         end
       end
 
