@@ -7,6 +7,7 @@ module Perry::Test
     @@data = nil
     @@last_result = nil
     @@writes_return_value = true
+    @@writes_use_default_return_value = true
 
     def read(options)
       query = options[:relation].to_hash
@@ -18,12 +19,12 @@ module Perry::Test
 
     def write(options)
       @@calls << [:write, options[:object]]
-      @@writes_return_value
+      writes_return_value
     end
 
     def delete(options)
       @@calls << [:delete, options[:object]]
-      @@writes_return_value
+      writes_return_value
     end
 
     def last_call
@@ -61,6 +62,15 @@ module Perry::Test
 
     def writes_return(val)
       @@writes_return_value = val
+      @@writes_use_default_return_value = false
+    end
+
+    def writes_return_value
+      if @@writes_use_default_return_value
+        Perry::Persistence::Response.new
+      else
+        @@writes_return_value
+      end
     end
 
     def reset
@@ -68,6 +78,7 @@ module Perry::Test
       @@data = nil
       @@count = nil
       @@writes_return_value = true
+      @@writes_use_default_return_value = true
     end
 
   end

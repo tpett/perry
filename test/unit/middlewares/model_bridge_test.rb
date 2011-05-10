@@ -18,11 +18,6 @@ class Perry::Middlewares::ModelBridgeTest < Test::Unit::TestCase
         @relation = Perry::Test::Blog::Site.scoped
       end
 
-      should "have a initialize method and call method" do
-        assert_equal -2, @bridge.instance_method(:initialize).arity
-        assert_equal 1, @bridge.instance_method(:call).arity
-      end
-
       should "call rest of stack and initialize the returned records if query options contains :relation" do
         result = @stack.call(:relation => @relation)
         assert_equal 1, result.size

@@ -25,6 +25,16 @@ class Perry::Middlewares::CacheRecords
   end
 
   def call(options)
+    if options[:relation]
+      call_with_cache(options)
+    else
+      @adapter.call(options)
+    end
+  end
+
+  protected
+
+  def call_with_cache(options)
     relation = options[:relation]
     modifiers = relation.modifiers_value
     query = relation.to_hash
@@ -45,8 +55,6 @@ class Perry::Middlewares::CacheRecords
       fresh_values
     end
   end
-
-  protected
 
   def key_for_query(query_hash)
     Digest::MD5.hexdigest(self.class.to_s + query_hash.to_a.sort { |a,b| a.to_s.first <=> b.to_s.first }.inspect)
