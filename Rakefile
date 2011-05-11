@@ -24,6 +24,7 @@ spec = Gem::Specification.new do |s|
 
   s.add_dependency("activesupport", [">= 2.3.0"])
   s.add_dependency("bertrpc", [">= 1.3.0"])
+  s.add_dependency("json", [">=1.4.6"])
 end
 
 Rake::GemPackageTask.new(spec) do |pkg|
@@ -52,7 +53,7 @@ begin
     t.libs       = ['test']
     t.test_files = FileList["test/**/*_test.rb"]
     t.verbose    = true
-    t.rcov_opts  = ['--text-report', "-x #{Gem.path}", '-x /Library/Ruby', '-x /usr/lib/ruby']
+    t.rcov_opts  = ['--text-report', "-x #{Gem.path.join(',')}", '-x /Library/Ruby', '-x /usr/lib/ruby']
   end
 
   task :default => :coverage

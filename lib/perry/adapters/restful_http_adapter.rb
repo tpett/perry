@@ -62,7 +62,7 @@ module Perry::Adapters
         response.success = parse_response_code(@last_response)
         response.meta = http_headers(@last_response).to_hash
         response.raw = @last_response.body
-        response.format = config[:format]
+        response.raw_format = config[:format] ? config[:format].gsub(/\W/, '').to_sym : nil
       end
     end
 

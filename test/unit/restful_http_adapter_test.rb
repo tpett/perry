@@ -138,10 +138,10 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
           assert_equal fake_response.split(/\r\n\r\n/)[1], @response.raw
         end
 
-        should "set Response#format to the correct format" do
+        should "set Response#raw_format to the correct format" do
           FakeWeb.register_uri(http_method, @uri, :body => 'OK')
           @response = @model.write_adapter.send(@adapter_method, :object => @instance)
-          assert_equal '.json', @response.format
+          assert_equal :json, @response.raw_format
         end
       end
     end

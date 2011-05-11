@@ -42,7 +42,7 @@ class Perry::Middlewares::ModelBridgeTest < Test::Unit::TestCase
           def call(options)
             Perry::Persistence::Response.new({
               :success => true,
-              :model_attributes => { :id => 1 }
+              :parsed => { :id => 1 }
             })
           end
         end
@@ -51,7 +51,7 @@ class Perry::Middlewares::ModelBridgeTest < Test::Unit::TestCase
           def call(options)
             Perry::Persistence::Response.new({
               :success => false,
-              :errors => ["record invalid", ["name", "can't be blank"]]
+              :parsed => { 'base' => "record invalid", "name" => "can't be blank" }
             })
           end
         end
