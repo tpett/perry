@@ -17,6 +17,7 @@ class Perry::PersistenceTest < Test::Unit::TestCase
           config.post_body_wrapper = "test"
         end
       end
+      @model.read_adapter.data = { :id => 1 }
       @object = @model.new
     end
 
@@ -51,7 +52,7 @@ class Perry::PersistenceTest < Test::Unit::TestCase
 
     should "call write method on the write_adapter when save called" do
       assert @object.save
-      assert_equal @object, @model.write_adapter.last_call.last
+      assert_equal @object, @model.write_adapter.last_write.last
     end
 
     should "call delete method on the write_adapter when delete called" do
@@ -68,7 +69,7 @@ class Perry::PersistenceTest < Test::Unit::TestCase
     should "set attribtues and save on update_attributes" do
       obj = @model.new_from_data_store(:a => 'a', :b => 'b')
       assert obj.update_attributes(:b => 'c')
-      assert_equal obj, @model.write_adapter.last_call.last
+      assert_equal obj, @model.write_adapter.last_write.last
       assert_equal 'a', obj.a
       assert_equal 'c', obj.b
     end

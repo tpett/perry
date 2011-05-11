@@ -12,6 +12,7 @@ class Perry::AdapterStackTest < Test::Unit::TestCase
       @model = Class.new(Perry::Test::Base)
       @model.class_eval do
         attributes :id
+
         configure_read do |config|
           config.add_middleware MiddlewareA
           config.add_processor ProcessorA
@@ -33,8 +34,8 @@ class Perry::AdapterStackTest < Test::Unit::TestCase
       result = relation.to_a
 
       correct = [
-        [ 'ProcessorA', {}, { :relation => relation } ],
-        [ 'MiddlewareA', {}, { :relation => relation } ],
+        [ 'ProcessorA', {}, { :relation => relation, :mode => :read } ],
+        [ 'MiddlewareA', {}, { :relation => relation, :mode => :read } ],
         [ Hash ],
         [ @model ]
       ]
@@ -48,8 +49,8 @@ class Perry::AdapterStackTest < Test::Unit::TestCase
       object.save
 
       correct = [
-        [ 'ProcessorA', {}, { :object => object } ],
-        [ 'MiddlewareA', {}, { :object => object } ],
+        [ 'ProcessorA', {}, { :object => object, :mode => :write } ],
+        [ 'MiddlewareA', {}, { :object => object, :mode => :write } ],
       ]
 
       assert_equal correct, Perry::Test::FakeAdapterStackItem.log[0..1]
@@ -60,8 +61,8 @@ class Perry::AdapterStackTest < Test::Unit::TestCase
       object.delete
 
       correct = [
-        [ 'ProcessorA', {}, { :object => object } ],
-        [ 'MiddlewareA', {}, { :object => object } ],
+        [ 'ProcessorA', {}, { :object => object, :mode => :delete } ],
+        [ 'MiddlewareA', {}, { :object => object, :mode => :delete } ],
       ]
 
       assert_equal correct, Perry::Test::FakeAdapterStackItem.log[0..1]

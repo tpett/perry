@@ -65,10 +65,26 @@ class Perry::AbstractAdapterTest < Test::Unit::TestCase
       end
     end
 
-    context "call instnace method" do
+    context "call instance method" do
 
       should "take two arguments" do
         assert_equal 2, @abstract.instance_method('call').arity
+      end
+
+      should "set the mode option before calling the stack" do
+        class ModeAdapter < Class.new(@abstract)
+          def read(options)
+            [{ :mode => options[:mode] }]
+          end
+          def stack_items
+            []
+          end
+        end
+
+        adapter = ModeAdapter.new(:mode_adapter, {})
+        [:read, :write, :delete].each do |mode|
+          assert_equal mode, adapter.call(mode, {}).first[:mode]
+        end
       end
 
       should "call stack items in order: processors, model bridge, middlewares" do
@@ -104,11 +120,11 @@ class Perry::AbstractAdapterTest < Test::Unit::TestCase
         adapter.call('read', { :relation => relation })
 
         correct = [
-          [ "ProcessorA", { :bar => 'A' }, { :relation => relation } ],
-          [ "ProcessorB", { :bar => 'B' }, { :relation => relation } ],
-          [ "MiddlewareA", { :foo => 'A' }, { :relation => relation } ],
-          [ "MiddlewareB", { :foo => 'B' }, { :relation => relation } ],
-          [ "read", { :relation => relation } ],
+          [ "ProcessorA", { :bar => 'A' }, { :relation => relation, :mode => :read } ],
+          [ "ProcessorB", { :bar => 'B' }, { :relation => relation, :mode => :read } ],
+          [ "MiddlewareA", { :foo => 'A' }, { :relation => relation, :mode => :read  } ],
+          [ "MiddlewareB", { :foo => 'B' }, { :relation => relation, :mode => :read } ],
+          [ "read", { :relation => relation, :mode => :read } ],
           [ Hash ],
           [ Hash ],
           [ Perry::Test::Blog::Site ],

@@ -7,12 +7,12 @@ class Perry::Middlewares::ModelBridge
 
   def call(options)
     result = @adapter.call(options)
-    if options[:relation]
+
+    case options[:mode]
+    when :read
       build_models_from_records(result, options)
-    elsif options[:object]
-      result.tap do |response|
-        update_model_after_save(response, options[:object])
-      end
+    when :write
+      result.tap { |response| update_model_after_save(response, options[:object]) }
     else
       result
     end
@@ -21,18 +21,29 @@ class Perry::Middlewares::ModelBridge
   protected
 
   def build_models_from_records(records, options)
-    records.collect do |attributes|
-      options[:relation].klass.new_from_data_store(attributes)
+    if options[:relation]
+      records.collect do |attributes|
+        options[:relation].klass.new_from_data_store(attributes)
+      end
+    else
+      records
     end
   end
 
   def update_model_after_save(response, model)
     model.saved = response.success
     if model.saved
+      if model.new_record?
+        key = response.model_attributes[:id]
+        raise Perry::PerryError.new('primary key not included in response') if key.nil?
+        model.id = key
+      end
       model.new_record = false
-      raise "model does not have primary key attribute" unless model.defined_attributes.include?('id')
-      model.id = response.model_attributes[:id] if model.id.nil?
-      #model.reload # TODO: also, skip on delete
+      model.reload unless model.read_adapter.nil?
+    else
+      errors = response.errors
+      errors[:base] = 'not saved' if errors.empty?
+      model.errors.merge!(errors)
     end
   end
 

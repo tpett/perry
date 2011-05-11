@@ -63,6 +63,26 @@ class Perry::BaseTest < Test::Unit::TestCase
       end
     end
 
+    context "errors method" do
+      should "be defined" do
+        assert @model.new.respond_to?(:errors)
+      end
+
+      should "be readonly" do
+        assert !@model.new.respond_to?(:errors=)
+      end
+
+      should "default to an empty hash" do
+        assert_equal({}, @model.new.errors)
+      end
+
+      should "support adding error messages" do
+        m = @model.new
+        m.errors[:field] = 'error!'
+        assert_equal 'error!', m.errors[:field]
+      end
+    end
+
     # context "add_processor class method" do
     #   setup do
     #     @processor = Class.new

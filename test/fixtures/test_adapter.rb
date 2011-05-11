@@ -3,6 +3,7 @@ module Perry::Test
     register_as :test
 
     @@calls = []
+    @@writes = []
     @@count = nil
     @@data = nil
     @@last_result = nil
@@ -17,7 +18,9 @@ module Perry::Test
     end
 
     def write(options)
-      @@calls << [:write, options[:object]]
+      c = [:write, options[:object]]
+      @@calls << c
+      @@writes << c
       writes_return_value
     end
 
@@ -28,6 +31,10 @@ module Perry::Test
 
     def last_call
       @@calls.last
+    end
+
+    def last_write
+      @@writes.last
     end
 
     def data(klass)
@@ -64,7 +71,10 @@ module Perry::Test
     end
 
     def writes_return_value
-      Perry::Persistence::Response.new(:success => @@writes_return_value)
+      Perry::Persistence::Response.new({
+        :success => @@writes_return_value,
+        :parsed => { :id => 1 }
+      })
     end
 
     def reset

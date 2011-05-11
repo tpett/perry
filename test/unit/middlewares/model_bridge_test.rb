@@ -7,7 +7,7 @@ class Perry::Middlewares::ModelBridgeTest < Test::Unit::TestCase
       @bridge = Perry::Middlewares::ModelBridge
     end
 
-    context "on reads" do
+    context "when query mode is :read" do
       setup do
         class FakeAdapter
           def call(options)
@@ -17,42 +17,50 @@ class Perry::Middlewares::ModelBridgeTest < Test::Unit::TestCase
 
         @stack = @bridge.new(FakeAdapter.new)
         @relation = Perry::Test::Blog::Site.scoped
+        @options = { :relation => @relation, :mode => :read }
       end
 
-      should "call rest of stack and initialize the returned records if query options contains :relation" do
-        result = @stack.call(:relation => @relation)
+      should "call rest of stack and initialize the returned records" do
+        result = @stack.call(@options)
         assert_equal 1, result.size
         assert_equal @relation.klass, result.first.class
       end
 
       should "set new_record? to false on new records" do
-        result = @stack.call(:relation => @relation)
+        result = @stack.call(@options)
         assert !result.first.new_record?
       end
 
       should "be no-op if does not contain :relation" do
-        result = @stack.call({})
+        @options.delete(:relation)
+        result = @stack.call(@options)
         assert_equal [ { :id => 1 } ], result
       end
     end
 
-    context "on writes" do
+    context "when query mode is :write" do
       setup do
         class SuccessAdapter
-          def call(options)
-            Perry::Persistence::Response.new({
+          def response
+            @response ||= Perry::Persistence::Response.new({
               :success => true,
               :parsed => { :id => 1 }
             })
           end
+          def call(options)
+            response
+          end
         end
 
         class FailureAdapter
-          def call(options)
-            Perry::Persistence::Response.new({
+          def response
+            @response ||= Perry::Persistence::Response.new({
               :success => false,
               :parsed => { 'base' => "record invalid", "name" => "can't be blank" }
             })
+          end
+          def call(options)
+            response
           end
         end
 
@@ -60,7 +68,8 @@ class Perry::Middlewares::ModelBridgeTest < Test::Unit::TestCase
         @model = @klass.new
         @model.new_record = nil
         @model.saved = nil
-        @options = { :object => @model }
+        @model.read_adapter.data = { :id => 1 }
+        @options = { :object => @model, :mode => :write }
       end
 
       teardown do
@@ -89,7 +98,13 @@ class Perry::Middlewares::ModelBridgeTest < Test::Unit::TestCase
           assert_equal false, @model.new_record?
         end
 
-        should "raise if Response does not have a value for the model's primary key in the Response#model_attributes collection"
+        should "raise if Response does not have a value for the model's primary key in the Response#model_attributes collection" do
+          assert_raise Perry::PerryError do
+            adapter = SuccessAdapter.new
+            adapter.response.parsed = nil
+            @bridge.new(adapter).call(@options)
+          end
+        end
       end
 
       should "set the model's :saved attribute to true on success" do
@@ -102,16 +117,45 @@ class Perry::Middlewares::ModelBridgeTest < Test::Unit::TestCase
         assert_equal false, @model.saved?
       end
 
-      should_eventually "reload the model on success" do
+      should "reload the model on success" do
         @bridge.new(SuccessAdapter.new).call(@options)
         assert_equal 1, @model.read_adapter.calls.size
       end
-      should "not reload the model on failure" do
 
+      should "not reload the model on failure" do
+        @bridge.new(FailureAdapter.new).call(@options)
+        assert_equal 0, @model.read_adapter.calls.size
       end
 
-      should "add error messages to the model on failure"
-      should "add error messages to the model on failure even if Response#errors is nil"
+      should "add error messages to the model on failure" do
+        @bridge.new(FailureAdapter.new).call(@options)
+        assert_equal 'record invalid', @model.errors[:base]
+        assert_equal "can't be blank", @model.errors[:name]
+      end
+
+      should "add error messages to the model on failure even if Response#errors has no errors" do
+        adapter = FailureAdapter.new
+        adapter.response.parsed = nil
+        @bridge.new(adapter).call(@options)
+        assert_equal 1, @model.errors.length
+      end
+
+      should "not reload the model if a read_adapter is not present" do
+        klass = Class.new(Perry::Test::SimpleModel)
+        klass.read_adapter = nil
+        def klass.fetch_records(relation)
+          raise "read_adapter is not present"
+        end
+
+        model = klass.new
+        model.new_record = nil
+        model.saved = nil
+        options = { :object => model, :mode => :write }
+
+        assert_nothing_raised do
+          @bridge.new(SuccessAdapter.new).call(options)
+        end
+      end
     end
 
   end

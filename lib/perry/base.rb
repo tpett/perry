@@ -35,6 +35,10 @@ class Perry::Base
     @attributes[attribute.to_s]
   end
 
+  def errors
+    @errors ||= {}
+  end
+
   protected
 
   # TRP: Common interface for setting attributes to keep things consistent; if

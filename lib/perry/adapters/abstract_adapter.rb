@@ -138,6 +138,7 @@ class Perry::Adapters::AbstractAdapter
       above_klass.new(below, above_config)
     end
 
+    options[:mode] = mode.to_sym
     @stack.call(options)
   end
 
