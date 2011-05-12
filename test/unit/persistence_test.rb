@@ -35,7 +35,7 @@ class Perry::PersistenceTest < Test::Unit::TestCase
 
     should "define persistence state methods on base" do
       [:new_record, :new_record?, :saved, :saved?, :persisted?, :new_record=, :saved=].each do |method|
-        assert @object.respond_to?(method), "expected @object to respond to :#{method}"
+        assert_respond_to(@object, method)
       end
     end
 
@@ -86,6 +86,48 @@ class Perry::PersistenceTest < Test::Unit::TestCase
       attrs_before = @object.attributes.clone
       @object.reload
       assert_not_equal attrs_before, @object.attributes
+    end
+
+    should "define a #freeze! method to set the @frozen instance variable" do
+      assert_nil @object.instance_variable_get(:@frozen)
+      @object.freeze!
+      assert @object.instance_variable_get(:@frozen)
+    end
+
+    should "override the #frozen? method to return the value of @frozen" do
+      assert !@object.frozen?
+      @object.freeze!
+      assert @object.frozen?
+    end
+
+    should "override Object#freeze to also call #freeze!" do
+      assert !@object.frozen?
+      @object.freeze
+      assert @object.frozen?
+      assert @object.instance_variable_get(:@frozen)
+    end
+
+    should "freeze the attributes hash on #freeze but not #freeze!" do
+      @object.freeze!
+      assert_nothing_raised { @object.a = 'b' }
+      @object.freeze
+      assert_raise(TypeError) { @object.b = 'c' }
+    end
+
+    should "raise on save if object is frozen" do
+      @object.freeze
+      assert_raise Perry::PerryError do
+        @object.save
+      end
+      assert @object.write_adapter.calls.empty?
+    end
+
+    should "raise on destroy if object is frozen" do
+      @object.freeze
+      assert_raise Perry::PerryError do
+        @object.destroy
+      end
+      assert @object.write_adapter.calls.empty?
     end
   end
 
