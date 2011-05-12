@@ -40,14 +40,18 @@ class Perry::Persistence::ResponseTest < Test::Unit::TestCase
       end
 
       should "parse JSON if raw_format is :json, cache it, and return it" do
-        json = %({ "foo": 123, "bar": ["a", "b", { "c": "baz" }] })
-        ruby = { "foo" => 123, "bar" => ["a", "b", { "c" => "baz" }] }
+        {
+          %({ "foo": 123, "bar": ["a", "b", { "c": "baz" }] }) =>
+          { "foo" => 123, "bar" => ["a", "b", { "c" => "baz" }] },
+          "BLAH{{{MALFORMED" => nil
+        }.each do |json, ruby|
+          @response = Perry::Persistence::Response.new
+          @response.raw = json
+          @response.raw_format = :json
 
-        @response.raw = json
-        @response.raw_format = :json
-
-        assert_equal ruby, @response.parsed
-        assert_equal ruby, @response.send(:instance_variable_get, :@parsed)
+          assert_equal ruby, @response.parsed
+          assert_equal ruby, @response.send(:instance_variable_get, :@parsed)
+        end
       end
 
       should "return nil for unknown raw_format" do

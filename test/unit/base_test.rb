@@ -83,24 +83,6 @@ class Perry::BaseTest < Test::Unit::TestCase
       end
     end
 
-    # context "add_processor class method" do
-    #   setup do
-    #     @processor = Class.new
-    #   end
-
-    #   should "accept a class and optional config options" do
-    #     method = @model.method(:add_processor)
-    #     assert method
-    #     assert_equal -2, method.arity
-    #   end
-
-    #   should "add to list of processors" do
-    #     @model.send(:add_processor, @processor, { :foo => :bar })
-    #     processors = @model.send(:class_variable_get, :@@processors)
-    #     assert_equal [@processor, { :foo => :bar }], processors.last
-    #   end
-    # end
-
     #-----------------------------------------
     # TRP: Scopes
     #-----------------------------------------

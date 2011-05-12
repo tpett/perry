@@ -12,7 +12,7 @@ class Perry::Middlewares::ModelBridge
     when :read
       build_models_from_records(result, options)
     when :write
-      update_model_after_save(result, options[:object]) 
+      update_model_after_save(result, options[:object])
       result
     when :delete
       update_model_after_delete(result, options[:object])

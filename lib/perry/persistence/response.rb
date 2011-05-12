@@ -31,7 +31,13 @@ module Perry::Persistence
 
     def parsed
       if parser = self.class.parsers[self.raw_format]
-        @parsed ||= parser.parse(self.raw)
+        begin
+          @parsed ||= parser.parse(self.raw)
+        rescue Exception => err
+          Perry.logger.error("Failure parsing raw response #{err.inspect}")
+          Perry.logger.error("Response: #{self.inspect}")
+          nil
+        end
       else
         @parsed
       end
