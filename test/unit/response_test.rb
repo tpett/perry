@@ -109,7 +109,11 @@ class Perry::Persistence::ResponseTest < Test::Unit::TestCase
           assert_equal output, @response.errors
         end
       end
-      should "return empty hash if not present"
+
+      should "return empty hash if not present" do
+        @response.parsed = nil
+        assert_equal({}, @response.errors)
+      end
     end
 
   end
