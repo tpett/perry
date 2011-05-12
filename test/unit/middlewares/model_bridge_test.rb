@@ -158,6 +158,56 @@ class Perry::Middlewares::ModelBridgeTest < Test::Unit::TestCase
       end
     end
 
+    context "when query mode is :delete" do
+      setup do
+        class SuccessAdapter
+          def call(options)
+            Perry::Persistence::Response.new(:success => true)
+          end
+        end
+
+        class FailureAdapter
+          def response
+            @response ||= Perry::Persistence::Response.new({
+              :success => false,
+              :parsed => { 'base' => 'record does not exist' }
+            })
+          end
+          def call(options)
+            response
+          end
+        end
+
+        @klass = Class.new(Perry::Test::SimpleModel)
+        @model = @klass.new
+        @model.new_record = false
+        @options = { :object => @model, :mode => :delete }
+      end
+
+      should "freeze! the model on success" do
+        @bridge.new(SuccessAdapter.new).call(@options)
+        assert @model.frozen?, "expected model to be frozen"
+        assert !@model.attributes.frozen?, "expected attributes to not be frozen"
+      end
+
+      should "not freeze the model on failure" do
+        @bridge.new(FailureAdapter.new).call(@options)
+        assert !@model.frozen?, "expected model to not be frozen"
+      end
+
+      should "add error messages to the model on failure" do
+        @bridge.new(FailureAdapter.new).call(@options)
+        assert_equal 'record does not exist', @model.errors[:base]
+      end
+
+      should "add a default error message to the model on failure if Response#errors has no errors" do
+        adapter = FailureAdapter.new
+        adapter.response.parsed = nil
+        @bridge.new(adapter).call(@options)
+        assert_equal 'not deleted', @model.errors[:base]
+      end
+    end
+
   end
 
 end

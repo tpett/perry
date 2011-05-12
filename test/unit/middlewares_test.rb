@@ -13,8 +13,6 @@ class Perry::MiddlewaresTest < Test::Unit::TestCase
     context "#{middleware_class} middleware" do
       setup do
         @klass = Class.new(Perry::Test::SimpleModel)
-        @read_options = { :relation => @klass.send(:relation) }
-        @write_options = { :object => @klass.new }
         @adapter_class = Perry::Test::MiddlewareAdapter
         @middleware_class = Perry::Middlewares.const_get(middleware_class)
         @middleware = @middleware_class.new(@adapter_class.new(:read, {}))
@@ -36,19 +34,23 @@ class Perry::MiddlewaresTest < Test::Unit::TestCase
         end
 
         should "return an array-like object on reads" do
-          assert @middleware.call(@read_options).respond_to?(:collect)
+          options = { :relation => @klass.send(:relation), :mode => :read }
+          assert @middleware.call(options).respond_to?(:collect)
         end
 
         should "return a Response object on writes" do
           write_adapter = @adapter_class.new(:write, {})
           middleware = @middleware_class.new(write_adapter)
-          assert middleware.call(@write_options).is_a?(Perry::Persistence::Response)
+          options = { :object => @klass.new, :mode => :write }
+          options[:object].read_adapter = nil
+          assert middleware.call(options).is_a?(Perry::Persistence::Response)
         end
 
         should "return a Response object on deletes" do
           delete_adapter = @adapter_class.new(:delete, {})
           middleware = @middleware_class.new(delete_adapter)
-          assert middleware.call(@write_options).is_a?(Perry::Persistence::Response)
+          options = { :object => @klass.new, :mode => :delete }
+          assert middleware.call(options).is_a?(Perry::Persistence::Response)
         end
       end
     end

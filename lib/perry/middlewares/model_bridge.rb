@@ -12,7 +12,11 @@ class Perry::Middlewares::ModelBridge
     when :read
       build_models_from_records(result, options)
     when :write
-      result.tap { |response| update_model_after_save(response, options[:object]) }
+      update_model_after_save(result, options[:object]) 
+      result
+    when :delete
+      update_model_after_delete(result, options[:object])
+      result
     else
       result
     end
@@ -41,10 +45,22 @@ class Perry::Middlewares::ModelBridge
       model.new_record = false
       model.reload unless model.read_adapter.nil?
     else
-      errors = response.errors
-      errors[:base] = 'not saved' if errors.empty?
-      model.errors.merge!(errors)
+      add_errors_to_model(response, model, 'not saved')
     end
+  end
+
+  def update_model_after_delete(response, model)
+    if response.success
+      model.freeze!
+    else
+      add_errors_to_model(response, model, 'not deleted')
+    end
+  end
+
+  def add_errors_to_model(response, model, default_message)
+    errors = response.errors
+    errors[:base] = default_message if errors.empty?
+    model.errors.merge!(errors)
   end
 
 end
