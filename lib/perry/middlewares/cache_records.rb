@@ -5,6 +5,8 @@ require 'perry/middlewares/cache_records/scopes'
 require 'digest/md5'
 
 class Perry::Middlewares::CacheRecords
+  include Perry::Logger
+
   attr_accessor :record_count_threshold
 
   # TRP: Default to a 5 minute cache
@@ -47,7 +49,7 @@ class Perry::Middlewares::CacheRecords
 
 
     if cached_values && !get_fresh
-      @adapter.log(query, "CACHE #{relation.klass.name}")
+      log(query, "CACHE #{relation.klass.name}")
       cached_values
     else
       fresh_values = @adapter.call(options)
