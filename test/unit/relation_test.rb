@@ -230,7 +230,7 @@ class Perry::RelationTest < Test::Unit::TestCase
         @relation.find(1)
         assert_equal [{:id => 1}], @adapter.last_call.last[:where]
         @relation.find("1")
-        assert_equal [{:id => 1}], @adapter.last_call.last[:where]
+        assert_equal [{:id => "1"}], @adapter.last_call.last[:where]
       end
 
       should "accept array of primary keys with finder options" do

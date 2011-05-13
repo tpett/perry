@@ -9,7 +9,6 @@ module Perry::Adapters
 
     def initialize(*args)
       super
-      @configuration_contexts << { :primary_key => :id }
     end
 
     def write(options)
@@ -92,7 +91,7 @@ module Perry::Adapters
 
     def build_uri(object, method)
       url = [self.config[:host].gsub(%r{/$}, ''), self.config[:service]]
-      url << object.send(self.config[:primary_key]) unless object.new_record?
+      url << object.send(self.config[:primary_key] || object.primary_key) unless object.new_record?
       uri = URI.parse "#{url.join('/')}#{self.config[:format]}"
 
       # TRP: method DELETE has no POST body so we have to append any default options onto the query string

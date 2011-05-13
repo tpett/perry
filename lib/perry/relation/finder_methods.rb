@@ -3,10 +3,12 @@ module Perry::FinderMethods
   def find(ids_or_mode, options={})
     case ids_or_mode
     when Fixnum, String
-      self.where(:id => ids_or_mode.to_i).first(options) || raise(Perry::RecordNotFound, "Could not find #{@klass} with :id = #{ids_or_mode}")
+      self.where(primary_key => ids_or_mode).first(options) || raise(Perry::RecordNotFound, "Could not find #{@klass} with :#{primary_key} = #{ids_or_mode}")
     when Array
-      self.where(:id => ids_or_mode).all(options).tap do |result|
-        raise Perry::RecordNotFound, "Couldn't find all #{@klass} with ids (#{ids_or_mode.join(',')}) (expected #{ids_or_mode.size} records but got #{result.size})." unless result.size == ids_or_mode.size
+      self.where(primary_key => ids_or_mode).all(options).tap do |result|
+        unless result.size == ids_or_mode.size
+          raise Perry::RecordNotFound, "Couldn't find all #{@klass} with ids (#{ids_or_mode.join(',')}) (expected #{ids_or_mode.size} records but got #{result.size})."
+        end
       end
     when :all
       self.all(options)

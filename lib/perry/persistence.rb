@@ -50,7 +50,7 @@ module Perry::Persistence
     alias :delete :destroy
 
     def reload
-      self.attributes = self.class.where(:id => self.id).first.attributes
+      self.attributes = self.class.where(primary_key => self.send(primary_key)).first.attributes
     end
 
     # Calls Object#freeze on the model and on the attributes hash in addition to

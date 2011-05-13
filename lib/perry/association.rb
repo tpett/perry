@@ -43,8 +43,14 @@ module Perry::Association
       raise NotImplementedError, "You must define collection? in subclasses."
     end
 
-    def primary_key
-      options[:primary_key] || :id
+    def primary_key(object=nil)
+      if options[:primary_key]
+        options[:primary_key]
+      elsif is_a?(BelongsTo)
+        target_klass(object).primary_key
+      elsif is_a?(Has)
+        source_klass.primary_key
+      end
     end
 
     def foreign_key
@@ -122,7 +128,8 @@ module Perry::Association
 
     # TRP: Make sure the value looks like a variable syntaxtually
     def sanitize_type_attribute(string)
-      string.gsub(/[^a-zA-Z]\w*/, '')
+      string =~ /^[a-zA-Z]\w*/
+      Regexp.last_match.to_s
     end
 
   end
@@ -171,7 +178,7 @@ module Perry::Association
       end
       if keys
         scope = base_scope(object)
-        scope.where(self.primary_key => keys)
+        scope.where(self.primary_key(object) => keys)
       end
     end
 
@@ -310,7 +317,7 @@ module Perry::Association
       else
         relation = relation.where(
           proc do
-            { target_association.primary_key => proxy_ids.call }
+            { target_association.primary_key(options[:source_type]) => proxy_ids.call }
           end
         )
       end

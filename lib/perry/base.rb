@@ -15,6 +15,8 @@ class Perry::Base
   include Perry::Serialization
   include Perry::Scopes
 
+  DEFAULT_PRIMARY_KEY = :id
+
   attr_accessor :attributes, :new_record, :saved, :read_options, :write_options
   alias :new_record? :new_record
   alias :saved? :saved
@@ -72,7 +74,7 @@ class Perry::Base
     delegate :modifiers, :to => :scoped
 
     def primary_key
-      @primary_key || :id
+      @primary_key || DEFAULT_PRIMARY_KEY
     end
 
     # Allows you to specify an attribute other than :id to use as your models

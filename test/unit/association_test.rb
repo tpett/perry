@@ -65,21 +65,25 @@ class Perry::AssociationTest < Test::Unit::TestCase
 
     end
 
+    should "sanitize type attributes" do
+      assert_equal 'Foo', @association.send(:sanitize_type_attribute, 'Foo')
+      assert_equal 'Foo_bar', @association.send(:sanitize_type_attribute, 'Foo_bar')
+      assert_equal 'Foo1234', @association.send(:sanitize_type_attribute, 'Foo1234')
+      assert_equal 'Foo_1234', @association.send(:sanitize_type_attribute, 'Foo_1234')
+      assert_equal 'Foo_1234', @association.send(:sanitize_type_attribute, 'Foo_1234 asdf')
+      assert_equal '', @association.send(:sanitize_type_attribute, '_Foo') # no match
+    end
   end
 
   context ":belongs_to association" do
     setup do
       @klass = Perry::Association::BelongsTo
-      @model = Class.new(Perry::Base)
-      @association = @klass.new(@model, "foo")
+      @model = new_class(Perry::Base)
+      @association = @klass.new(@model, "foo", :class_name => @model.to_s)
     end
 
     should "set type to :belongs_to" do
       assert_equal :belongs_to, @association.type
-    end
-
-    should "use :id as default primary key" do
-      assert_equal :id, @association.primary_key
     end
 
     should "return false for collection?" do
@@ -93,6 +97,25 @@ class Perry::AssociationTest < Test::Unit::TestCase
     should "return true for polymorphic? if polymorphic options specified and false otherwise" do
       assert !@association.polymorphic?
       assert @klass.new(@model, 'bar', :polymorphic => true).polymorphic?
+    end
+
+    should "use the target class's custom primary key in #scope method" do
+      source_model = new_class(Perry::Base)
+      source_model.class_eval do
+        attributes :id, :foo_id, :foo_type
+      end
+
+      target_model = new_class(Perry::Base)
+      target_model.class_eval do
+        attributes :custom
+        set_primary_key :custom
+      end
+
+      association = @klass.new(source_model, :foo, :polymorphic => true)
+      source_instance = source_model.new
+      source_instance.attributes.merge!('foo_id' => 1, 'foo_type' => target_model.to_s)
+
+      assert_equal({ :custom => 1 }, association.scope(source_instance).to_hash[:where].first)
     end
 
     context "scope method" do
@@ -129,7 +152,6 @@ class Perry::AssociationTest < Test::Unit::TestCase
         end
       end
     end
-
   end
 
   context "has associations" do
@@ -437,5 +459,45 @@ class Perry::AssociationTest < Test::Unit::TestCase
 
   end
 
+  context "An association's default primary key" do
+    setup do
+      @source_model = new_class(Perry::Base)
+      @source_model.class_eval do
+        attributes :custom, :foo_id, :foo_type
+        set_primary_key :custom
+      end
+      @target_model = new_class(Perry::Base)
+      @target_model.class_eval do
+        attributes :also_custom
+        set_primary_key :also_custom
+      end
+    end
+
+    should "always be overriden by options[:primary_key]" do
+      association = Perry::Association::BelongsTo.new(nil, :a, :primary_key => :asdf)
+      assert_equal :asdf, association.primary_key
+      association = Perry::Association::Has.new(nil, :a, :primary_key => :asdf)
+      assert_equal :asdf, association.primary_key
+    end
+
+    should "be the target class's primary key in a belongs to association" do
+      association = Perry::Association::BelongsTo.new(@source_model, :foo, :class_name => @target_model.to_s)
+      assert_equal @target_model.primary_key, association.primary_key
+    end
+
+    should "be the target class's primary key in a polymorphic belongs to association" do
+      association = Perry::Association::BelongsTo.new(@source_model, :foo, :polymorphic => true)
+      source_instance = @source_model.new
+      source_instance.attributes.merge!('foo_type' => @target_model.to_s)
+      assert_equal @target_model.primary_key, association.primary_key(source_instance)
+    end
+
+    should "be the source class's primary key in a has association" do
+      association = Perry::Association::HasOne.new(@source_model, :foo, :class_name => @target_model.to_s)
+      assert_equal @source_model.primary_key, association.primary_key
+      association = Perry::Association::HasMany.new(@source_model, :foo, :class_name => @target_model.to_s)
+      assert_equal @source_model.primary_key, association.primary_key
+    end
+  end
 
 end
