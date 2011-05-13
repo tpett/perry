@@ -9,8 +9,8 @@ class Perry::Relation
   attr_reader :klass
   attr_accessor :records
 
-  SINGLE_VALUE_METHODS = [:limit, :offset, :from]
-  MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :includes, :where, :having]
+  SINGLE_VALUE_METHODS = [:limit, :offset, :includes, :from]
+  MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :where, :having]
 
   QUERY_METHODS = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS
   FINDER_OPTIONS = QUERY_METHODS + [:conditions, :search, :sql]
@@ -81,7 +81,7 @@ class Perry::Relation
   end
 
   def eager_load?
-    @includes_values && !@includes_values.empty?
+    @includes_value
   end
 
   def inspect

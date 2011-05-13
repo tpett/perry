@@ -1,6 +1,6 @@
 module Perry::QueryMethods
   # TRP: Define each of the variables the query options will be stored in.
-  attr_accessor :select_values, :group_values, :order_values, :joins_values, :includes_values, :where_values, :having_values,
+  attr_accessor :select_values, :group_values, :order_values, :joins_values, :includes_value, :where_values, :having_values,
                 :limit_value, :offset_value, :from_value, :raw_sql_value
 
   def select(*args)
@@ -25,7 +25,7 @@ module Perry::QueryMethods
 
   def includes(*args)
     args.reject! { |a| a.nil? }
-    clone.tap { |r| r.includes_values += (r.includes_values + args).flatten.uniq if args_valid? args }
+    clone.tap { |r| r.includes_value = (r.includes_value || {}).deep_merge(sanitize_includes(args)) if args_valid? args }
   end
 
   def where(*args)
@@ -56,6 +56,22 @@ module Perry::QueryMethods
 
   def args_valid?(args)
     args.respond_to?(:empty?) ? !args.empty? : !!args
+  end
+
+  # This will allow for the nested structure
+  def sanitize_includes(values)
+    case values
+    when Hash
+      values.keys.inject({}) do |hash, key|
+        hash.merge key => sanitize_includes(values[key])
+      end
+    when Array
+      values.inject({}) { |hash, val| hash.merge sanitize_includes(val) }
+    when String, Symbol
+      { values.to_sym => {} }
+    else
+      {}
+    end
   end
 
 end

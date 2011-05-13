@@ -128,19 +128,20 @@ class Perry::Processors::PreloadAssociationsTest < Test::Unit::TestCase
       assert_equal site.defined_associations[:comments].scope(site).to_hash, site.comments.to_hash
     end
 
-    should "accept an option as a hash and pass the value of the hash to the next query" do
+    should "nest includes queries using tree like syntax" do
       @adapter.data = @adapter.data.merge(
-        @comment => { :parent_id => 1, :parent_type => "Article" }
+        @comment => { :parent_id => 1, :parent_type => "Article", :person_id => 1 },
+        @person => { :id => 1 }
       )
-      sites = @site.includes(:articles => :comments).all
-      assert_equal 3, @adapter.calls.size
+      sites = @site.includes(:articles => :comments, :comments => :author).all
+      assert_equal 5, @adapter.calls.size
 
       assert_equal Array, sites.first.articles.records.class
       assert_equal @article, sites.first.articles.records[0].class
       assert_equal Array, sites.first.articles.to_a.first.comments.to_a.class
       assert_equal @comment, sites.first.articles.records[0].comments.records[0].class
 
-      assert_equal 3, @adapter.calls.size
+      assert_equal 5, @adapter.calls.size
     end
 
     should "raise AssociationNotFound for nonexistant associations in :includes" do

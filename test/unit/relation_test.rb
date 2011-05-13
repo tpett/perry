@@ -42,9 +42,10 @@ class Perry::RelationTest < Test::Unit::TestCase
         relation = @relation.dup
         SINGLE_VALUE_METHODS.each { |method| relation = relation.merge(@relation.send(method, 'foo')) }
         hash = relation.to_hash
-        SINGLE_VALUE_METHODS.each do |method|
+        (SINGLE_VALUE_METHODS - [:includes]).each do |method|
           assert_equal 'foo', hash[method]
         end
+        assert_equal({:foo => {}}, hash[:includes])
       end
 
       should "merge modifiers into new relation" do
@@ -84,9 +85,10 @@ class Perry::RelationTest < Test::Unit::TestCase
 
     context "to_hash method" do
       setup do
-        @all_methods = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS
+        @all_methods = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS - [:includes]
         @loaded_relation = @relation.clone
         @all_methods.each { |method| @loaded_relation = @loaded_relation.send(method, 'foo') }
+        @loaded_relation = @loaded_relation.includes(:foo)
       end
 
       should "return only :sql key if :sql option is set" do
@@ -99,6 +101,7 @@ class Perry::RelationTest < Test::Unit::TestCase
         hash = @loaded_relation.to_hash
         @all_methods.each { |method| assert_equal 'foo', (v = hash[method]).is_a?(Array) ? v.first : v }
         assert_nil hash[:sql]
+        assert_equal({:foo => {}}, hash[:includes])
       end
 
       should "not include blank values" do
@@ -272,7 +275,7 @@ class Perry::RelationTest < Test::Unit::TestCase
     context "apply_finder_options method" do
       setup do
         @model.send :attributes, :id
-        @all_methods = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS + [:modifiers]
+        @all_methods = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS + [:modifiers] - [:includes]
       end
 
       should "allow any of the regular query methods as keys" do
@@ -293,7 +296,7 @@ class Perry::RelationTest < Test::Unit::TestCase
       end
 
       should "allow :include key as alias for :includes" do
-        assert_equal ['foo'], @relation.apply_finder_options(:include => 'foo').to_hash[:includes]
+        assert_equal({ :foo => {} }, @relation.apply_finder_options(:include => 'foo').to_hash[:includes])
       end
 
       should "allow :search key and pass through to search method" do
@@ -324,7 +327,7 @@ class Perry::RelationTest < Test::Unit::TestCase
     end
 
     # Single query methods
-    SINGLE_VALUE_METHODS.each do |method|
+    (SINGLE_VALUE_METHODS - [:includes]).each do |method|
       context "#{method} query method" do
         should "clone new relation and replace value in #{method}_value" do
           new_relation = @relation.send(method, 'foo')
@@ -340,6 +343,14 @@ class Perry::RelationTest < Test::Unit::TestCase
         new_relation = @relation.sql('select * from foo')
         assert_nil @relation.raw_sql_value
         assert_equal 'select * from foo', new_relation.raw_sql_value
+      end
+    end
+
+    context "includes query method setting hash value" do
+      should "split multi item hashes into multiple entries" do
+        new_relation = @relation.includes(:foo => :bar, :baz => :perry).includes(:foo => :poo).includes(:foo)
+        assert_equal({:foo => {:bar => {}, :poo => {}}, :baz => { :perry => {} }},
+                     new_relation.includes_value)
       end
     end
 
