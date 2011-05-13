@@ -106,6 +106,10 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
           @adapter_method = test_method
         end
 
+        teardown do
+          FakeWeb.last_request = nil
+        end
+
         should "return a Response object" do
           FakeWeb.register_uri(http_method, @uri, :body => 'OK')
           @response = @model.write_adapter.send(@adapter_method, :object => @instance)
@@ -148,6 +152,21 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
           FakeWeb.register_uri(http_method, @uri, :body => 'OK')
           @response = @model.write_adapter.send(@adapter_method, :object => @instance)
           assert_equal :json, @response.raw_format
+        end
+
+        unless http_method == :post
+          should "return a failure response if object's primary key value is nil" do
+            @instance.id = nil
+            FakeWeb.register_uri(http_method, @uri, :body => 'OK')
+
+            assert_nothing_raised do
+              @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+            end
+
+            assert_nil FakeWeb.last_request
+            assert_equal false, @response.success
+            assert_equal Perry::Adapters::RestfulHTTPAdapter::KeyError.new.message, @response.errors[:base]
+          end
         end
       end
     end
