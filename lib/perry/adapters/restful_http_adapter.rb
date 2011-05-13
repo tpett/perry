@@ -5,11 +5,16 @@ module Perry::Adapters
   class RestfulHTTPAdapter < Perry::Adapters::AbstractAdapter
     register_as :restful_http
 
+    class KeyError < Perry::PerryError
+      def message
+        '(restful_http_adapter) request not sent because primary key value was nil'
+      end
+    end
+
     attr_reader :last_response
 
     def initialize(*args)
       super
-      @configuration_contexts << { :primary_key => :id }
     end
 
     def write(options)
@@ -58,11 +63,16 @@ module Perry::Adapters
       end
 
       Perry::Persistence::Response.new.tap do |response|
-        response.status = @last_response.code.to_i
+        response.status = @last_response.code.to_i if @last_response
         response.success = parse_response_code(@last_response)
-        response.meta = http_headers(@last_response).to_hash
-        response.raw = @last_response.body
+        response.meta = http_headers(@last_response).to_hash if @last_response
+        response.raw = @last_response.body if @last_response
         response.raw_format = config[:format] ? config[:format].gsub(/\W/, '').to_sym : nil
+      end
+    rescue KeyError => ex
+      Perry::Persistence::Response.new.tap do |response|
+        response.success = false
+        response.parsed = { :base => ex.message }
       end
     end
 
@@ -92,7 +102,11 @@ module Perry::Adapters
 
     def build_uri(object, method)
       url = [self.config[:host].gsub(%r{/$}, ''), self.config[:service]]
-      url << object.send(self.config[:primary_key]) unless object.new_record?
+      unless object.new_record?
+        primary_key = self.config[:primary_key] || object.primary_key
+        pk_value = object.send(primary_key) or raise KeyError
+        url << pk_value
+      end
       uri = URI.parse "#{url.join('/')}#{self.config[:format]}"
 
       # TRP: method DELETE has no POST body so we have to append any default options onto the query string

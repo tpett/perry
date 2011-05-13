@@ -83,6 +83,41 @@ class Perry::BaseTest < Test::Unit::TestCase
       end
     end
 
+    context "primary keys" do
+      should "define a :primary_key method" do
+        assert @model.respond_to?(:primary_key)
+      end
+
+      should "use :id as the default primary key" do
+        assert_equal :id, @model.primary_key
+      end
+
+      should "define a :primary_key shortcut method on model instances" do
+        assert_equal @model.primary_key, @model.new.primary_key
+      end
+
+      should "define a :set_primary_key method that accepts one argument" do
+        assert @model.respond_to?(:set_primary_key)
+        assert_equal 1, @model.method(:set_primary_key).arity
+      end
+
+      should "be customizable" do
+        @model.class_eval do
+          attributes :custom
+          set_primary_key :custom
+        end
+        assert_equal :custom, @model.primary_key
+      end
+
+      should "require primary key attribute to exist on the model" do
+        assert_raise Perry::PerryError do
+          @model.class_eval do
+            set_primary_key :does_not_exist
+          end
+        end
+      end
+    end
+
     #-----------------------------------------
     # TRP: Scopes
     #-----------------------------------------

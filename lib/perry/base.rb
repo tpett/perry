@@ -15,6 +15,8 @@ class Perry::Base
   include Perry::Serialization
   include Perry::Scopes
 
+  DEFAULT_PRIMARY_KEY = :id
+
   attr_accessor :attributes, :new_record, :saved, :read_options, :write_options
   alias :new_record? :new_record
   alias :saved? :saved
@@ -37,6 +39,10 @@ class Perry::Base
 
   def errors
     @errors ||= {}
+  end
+
+  def primary_key
+    self.class.primary_key
   end
 
   protected
@@ -66,6 +72,20 @@ class Perry::Base
     delegate :select, :group, :order, :joins, :where, :having, :limit, :offset,
       :from, :includes, :to => :scoped
     delegate :modifiers, :to => :scoped
+
+    def primary_key
+      @primary_key || DEFAULT_PRIMARY_KEY
+    end
+
+    # Allows you to specify an attribute other than :id to use as your models
+    # primary key.
+    #
+    def set_primary_key(attribute)
+      unless defined_attributes.include?(attribute.to_s)
+        raise Perry::PerryError.new("cannot set primary key to non-existent attribute")
+      end
+      @primary_key = attribute.to_sym
+    end
 
     def new_from_data_store(hash)
       if hash.nil?

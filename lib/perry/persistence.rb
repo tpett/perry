@@ -45,12 +45,19 @@ module Perry::Persistence
 
     def destroy
       raise Perry::PerryError.new("cannot destroy a frozen object") if frozen?
-      write_adapter.call(:delete, :object => self).success unless self.new_record?
+      unless self.new_record? || self.send(primary_key).nil?
+        write_adapter.call(:delete, :object => self).success
+      end
     end
     alias :delete :destroy
 
+    def destroy!
+      destroy or raise Perry::RecordNotSaved
+    end
+    alias :delete! :destroy!
+
     def reload
-      self.attributes = self.class.where(:id => self.id).first.attributes
+      self.attributes = self.class.where(primary_key => self.send(primary_key)).first.attributes
     end
 
     # Calls Object#freeze on the model and on the attributes hash in addition to
