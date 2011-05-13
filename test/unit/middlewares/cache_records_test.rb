@@ -72,10 +72,10 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
         assert_equal 2, @adapter.calls.size
       end
 
-      should "be shared across caching middleware instances" do
+      should "not be shared across caching middleware instances" do
         @middleware.call(@options)
         @other_middleware.call(@options)
-        assert_equal 1, @adapter.calls.size
+        assert_equal 2, @adapter.calls.size
       end
     end
 

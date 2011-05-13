@@ -11,14 +11,13 @@ class Perry::Middlewares::CacheRecords
 
   # TRP: Default to a 5 minute cache
   DEFAULT_LONGEVITY = 5*60
-  @@cache_store = nil
 
   def reset_cache_store(default_longevity=DEFAULT_LONGEVITY)
-    @@cache_store = Perry::Middlewares::CacheRecords::Store.new(default_longevity)
+    @cache_store = Perry::Middlewares::CacheRecords::Store.new(default_longevity)
   end
 
   def cache_store
-    @@cache_store || reset_cache_store
+    @cache_store || reset_cache_store
   end
 
   def initialize(adapter, config={})
@@ -63,6 +62,6 @@ class Perry::Middlewares::CacheRecords
   end
 
   def should_store_in_cache?(fresh_values)
-    self.record_count_threshold && fresh_values.size <= self.record_count_threshold
+    !self.record_count_threshold || fresh_values.size <= self.record_count_threshold
   end
 end
