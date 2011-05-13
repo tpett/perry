@@ -111,6 +111,26 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
             assert_equal Perry::Adapters::RestfulHTTPAdapter::KeyError.new.message, @response.errors[:base]
           end
         end
+
+        unless http_method == :delete
+          should "not alter config[:default_options] when config[:post_body_wrapper] is set" do
+            FakeWeb.register_uri(http_method, @uri, :response => mock_http_response('json_response'))
+
+            @model.class_eval do
+              attributes :foo
+              configure_write do |config|
+                config.post_body_wrapper = 'model'
+                config.default_options = { :api_key => 'asdf' }
+              end
+            end
+
+            @instance.foo = 'foo'
+
+            old_defaults = @model.write_adapter.config[:default_options].dup
+            @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+            assert_equal old_defaults, @model.write_adapter.config[:default_options]
+          end
+        end
       end
     end
 
