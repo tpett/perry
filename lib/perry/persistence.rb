@@ -51,6 +51,11 @@ module Perry::Persistence
     end
     alias :delete :destroy
 
+    def destroy!
+      destroy or raise Perry::RecordNotSaved
+    end
+    alias :delete! :destroy!
+
     def reload
       self.attributes = self.class.where(primary_key => self.send(primary_key)).first.attributes
     end

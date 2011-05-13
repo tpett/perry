@@ -68,10 +68,27 @@ class Perry::PersistenceTest < Test::Unit::TestCase
       assert !@model.write_adapter.last_call
     end
 
+    should "raise on destroy! if new_record? is true" do
+      @object.id = 1
+      assert_raise Perry::RecordNotSaved do
+        @object.destroy!
+      end
+      assert !@model.write_adapter.last_call
+    end
+
     should "not call delete method on the write adapter when object has no primary key value" do
       @object.id = nil
       @object.new_record = false
       assert !@object.delete
+      assert !@model.write_adapter.last_call
+    end
+
+    should "raise on destroy! if object has no primary key value" do
+      @object.id = nil
+      @object.new_record = false
+      assert_raise Perry::RecordNotSaved do
+        @object.destroy!
+      end
       assert !@model.write_adapter.last_call
     end
 
