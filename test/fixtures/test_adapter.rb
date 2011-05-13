@@ -37,7 +37,7 @@ module Perry::Test
       @@writes.last
     end
 
-    def data(klass)
+    def data(klass=nil)
       if @@data
         @@last_result = (@@data[klass] || @@data).dup.tap do |data_hash|
           data_hash.each do |key, value|

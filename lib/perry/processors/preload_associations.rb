@@ -27,9 +27,15 @@ class Perry::Processors::PreloadAssociations
 
     relation = options[:relation]
     (relation.to_hash[:includes] || []).each do |association_id|
-      association = relation.klass.defined_associations[association_id.to_sym]
+      if association_id.is_a?(Hash)
+        association = relation.klass.defined_associations[association_id.keys.first]
+        includes_values = association_id.values.first
+      else
+        association = relation.klass.defined_associations[association_id.to_sym]
+        includes_values = nil
+      end
       raise Perry::AssociationNotFound, "unknown association #{association_id}" unless association
-      eager_records = association.scope(results).all(:modifiers => options[:relation].modifiers_value)
+      eager_records = association.scope(results).includes(includes_values).all(:modifiers => options[:relation].modifiers_value)
 
       results.each do |result|
         scope = association.scope(result)
