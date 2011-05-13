@@ -57,7 +57,7 @@ class Perry::AdapterStackTest < Test::Unit::TestCase
     end
 
     should "hit the whole adapter stack with any delete" do
-      object = @model.new_from_data_store({})
+      object = @model.new_from_data_store({ :id => 1 })
       object.delete
 
       correct = [

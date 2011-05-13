@@ -45,7 +45,9 @@ module Perry::Persistence
 
     def destroy
       raise Perry::PerryError.new("cannot destroy a frozen object") if frozen?
-      write_adapter.call(:delete, :object => self).success unless self.new_record?
+      unless self.new_record? || self.send(primary_key).nil?
+        write_adapter.call(:delete, :object => self).success
+      end
     end
     alias :delete :destroy
 

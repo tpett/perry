@@ -56,12 +56,21 @@ class Perry::PersistenceTest < Test::Unit::TestCase
     end
 
     should "call delete method on the write_adapter when delete called" do
+      @object.id = 1
       @object.new_record = false
       assert @object.delete
       assert_equal @object, @model.write_adapter.last_call.last
     end
 
     should "not call delete method on the write adapter when new_record? is true" do
+      @object.id = 1
+      assert !@object.delete
+      assert !@model.write_adapter.last_call
+    end
+
+    should "not call delete method on the write adapter when object has no primary key value" do
+      @object.id = nil
+      @object.new_record = false
       assert !@object.delete
       assert !@model.write_adapter.last_call
     end
