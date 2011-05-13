@@ -134,10 +134,6 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
       end
     end
 
-    should "use :id for the default primary_key" do
-      assert_equal :id, @model.write_adapter.config[:primary_key]
-    end
-
     should "allow configuration of the primary_key" do
       pk = :custom
       @model.clone.tap do |model|
