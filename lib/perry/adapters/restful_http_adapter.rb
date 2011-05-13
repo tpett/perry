@@ -5,20 +5,22 @@ module Perry::Adapters
   class RestfulHTTPAdapter < Perry::Adapters::AbstractAdapter
     register_as :restful_http
 
-    attr_reader :last_response
-
-    def initialize(type, config)
-      config = config.is_a?(Array) ? config : [config]
-      super(type, [{ :primary_key => :id }] + config)
+    class KeyError < Perry::PerryError
+      def message
+        '(restful_http_adapter) request not sent because primary key value was nil'
+      end
     end
 
-    def write(object)
+    attr_reader :last_response
+
+    def write(options)
+      object = options[:object]
       params = build_params_from_attributes(object)
       object.new_record? ? post_http(object, params) : put_http(object, params)
     end
 
-    def delete(object)
-      delete_http(object)
+    def delete(options)
+      delete_http(options[:object])
     end
 
     protected
@@ -55,7 +57,19 @@ module Perry::Adapters
       self.log(params, "#{method.to_s.upcase} #{req_uri}") do
         @last_response = Net::HTTP.new(req_uri.host, req_uri.port).start { |http| http.request(request) }
       end
-      parse_response_code(@last_response)
+
+      Perry::Persistence::Response.new.tap do |response|
+        response.status = @last_response.code.to_i if @last_response
+        response.success = parse_response_code(@last_response)
+        response.meta = http_headers(@last_response).to_hash if @last_response
+        response.raw = @last_response.body if @last_response
+        response.raw_format = config[:format] ? config[:format].gsub(/\W/, '').to_sym : nil
+      end
+    rescue KeyError => ex
+      Perry::Persistence::Response.new.tap do |response|
+        response.success = false
+        response.parsed = { :base => ex.message }
+      end
     end
 
     def parse_response_code(response)
@@ -84,7 +98,11 @@ module Perry::Adapters
 
     def build_uri(object, method)
       url = [self.config[:host].gsub(%r{/$}, ''), self.config[:service]]
-      url << object.send(self.config[:primary_key]) unless object.new_record?
+      unless object.new_record?
+        primary_key = self.config[:primary_key] || object.primary_key
+        pk_value = object.send(primary_key) or raise KeyError
+        url << pk_value
+      end
       uri = URI.parse "#{url.join('/')}#{self.config[:format]}"
 
       # TRP: method DELETE has no POST body so we have to append any default options onto the query string
@@ -93,6 +111,12 @@ module Perry::Adapters
       end
 
       uri
+    end
+
+    def http_headers(response)
+      response.to_hash.inject({}) do |clean_headers, (key, values)|
+        clean_headers.merge(key => values.length > 1 ? values : values.first)
+      end
     end
 
   end

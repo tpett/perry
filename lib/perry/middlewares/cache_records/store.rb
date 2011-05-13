@@ -1,4 +1,4 @@
-module Perry::Cacheable
+class Perry::Middlewares::CacheRecords
 
   class Store
 

@@ -17,7 +17,17 @@ require 'perry'
 
 # TRP: Test models
 require 'test/fixtures/test_adapter'
+require 'test/fixtures/middleware_adapter'
 require 'test/fixtures/models'
 
 # Pull in factories
 require 'test/factories'
+
+def mock_http_response(name_without_ext)
+  File.open(File.join('test/fixtures', "#{name_without_ext}.txt")) { |io| io.read }
+end
+
+# Generates a named class with a random name
+def new_class(klass)
+  eval "TestClass_#{rand(10**10)} = Class.new(klass)"
+end

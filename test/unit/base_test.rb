@@ -37,55 +37,6 @@ class Perry::BaseTest < Test::Unit::TestCase
       end
     end
 
-    context "persistence methods" do
-      setup do
-        @model.class_eval do
-          attributes :a, :b, :c
-          write_with :test
-
-          configure_write do |config|
-            config.post_body_wrapper = "test"
-          end
-        end
-      end
-
-      should "require perry/persistence if needed" do
-        assert defined?(Perry::Persistence)
-      end
-
-      should "include Perry::Mutable module" do
-        assert @model.ancestors.include?(Perry::Persistence)
-      end
-
-      should "define writers for attributes that have been declared" do
-        instance = @model.new
-        assert instance.respond_to?(:a=)
-        assert instance.respond_to?(:b=)
-        assert instance.respond_to?(:c=)
-      end
-
-      should "set config options to adapter config" do
-        assert @model.write_adapter.config.keys.include?(:post_body_wrapper)
-      end
-    end
-
-    context "configure_cacheable method" do
-      setup do
-        @expires = Time.now
-        @model.send(:configure_cacheable, :expires => @expires, :record_count_threshold => 5)
-      end
-
-      should "include Perry::Cacheable module" do
-        assert @model.ancestors.include?(Perry::Cacheable)
-      end
-
-      should "set configuration vars" do
-        assert_equal @expires, @model.send(:cache_expires)
-        assert_equal 5, @model.send(:cache_record_count_threshold)
-      end
-    end
-
-
     # TRP: new_record flag control
     should "set new_record true when a new object is created directly" do
       assert @model.new.new_record?
@@ -94,7 +45,7 @@ class Perry::BaseTest < Test::Unit::TestCase
     context "new_from_data_store method" do
       setup do
         @attributes = Factory(:widget)
-        @widget = Perry::Test::Wearhouse::Widget.new_from_data_store(@attributes)
+        @widget = Perry::Test::Warehouse::Widget.new_from_data_store(@attributes)
       end
 
       should "instantiate a new object from hash" do
@@ -108,7 +59,62 @@ class Perry::BaseTest < Test::Unit::TestCase
       end
 
       should "return nil when nil is passed in" do
-        assert_nil Perry::Test::Wearhouse::Widget.new_from_data_store(nil)
+        assert_nil Perry::Test::Warehouse::Widget.new_from_data_store(nil)
+      end
+    end
+
+    context "errors method" do
+      should "be defined" do
+        assert @model.new.respond_to?(:errors)
+      end
+
+      should "be readonly" do
+        assert !@model.new.respond_to?(:errors=)
+      end
+
+      should "default to an empty hash" do
+        assert_equal({}, @model.new.errors)
+      end
+
+      should "support adding error messages" do
+        m = @model.new
+        m.errors[:field] = 'error!'
+        assert_equal 'error!', m.errors[:field]
+      end
+    end
+
+    context "primary keys" do
+      should "define a :primary_key method" do
+        assert @model.respond_to?(:primary_key)
+      end
+
+      should "use :id as the default primary key" do
+        assert_equal :id, @model.primary_key
+      end
+
+      should "define a :primary_key shortcut method on model instances" do
+        assert_equal @model.primary_key, @model.new.primary_key
+      end
+
+      should "define a :set_primary_key method that accepts one argument" do
+        assert @model.respond_to?(:set_primary_key)
+        assert_equal 1, @model.method(:set_primary_key).arity
+      end
+
+      should "be customizable" do
+        @model.class_eval do
+          attributes :custom
+          set_primary_key :custom
+        end
+        assert_equal :custom, @model.primary_key
+      end
+
+      should "require primary key attribute to exist on the model" do
+        assert_raise Perry::PerryError do
+          @model.class_eval do
+            set_primary_key :does_not_exist
+          end
+        end
       end
     end
 
@@ -282,109 +288,6 @@ class Perry::BaseTest < Test::Unit::TestCase
 
 
     #-----------------------------------------
-    # TRP: Cacheable
-    #-----------------------------------------
-    context "with cacheable set" do
-      setup do
-        @model.send :attributes, :id, :name, :expire_at
-        @model.send :configure_cacheable, :record_count_threshold => 3, :expires => :expire_at
-        @adapter.data = { :id => 1, :name => "Foo", :expire_at => Time.now + 60 }
-      end
-
-      should "only execute one call for two duplicate requests" do
-        assert_equal @model.first, @model.first
-        assert_equal 1, @adapter.calls.size
-      end
-
-      should "only cache if the record count is within threshold" do
-        @model.limit(4).all
-        @model.limit(4).all
-        assert_equal 2, @adapter.calls.size
-      end
-
-      should "rerun query if cache is expired" do #should "use :expires option attribute on fresh data to set expire time if :expires option present"
-        @adapter.data = @adapter.data.merge(:expire_at => Time.now)
-        @model.first
-        @model.first
-        assert_equal 2, @adapter.calls.size
-      end
-
-      should "set fresh to false if data is from cache and to true if data is not from cache" do
-        assert @model.first.fresh
-        assert !@model.first.fresh
-      end
-
-      should "rerun query if fresh scope called" do
-        assert_not_equal @model.fresh.first, @model.fresh.first
-        assert_equal 2, @adapter.calls.size
-      end
-
-      should "rerun query if :fresh finder option passed" do
-        assert_not_equal @model.first(:fresh => true), @model.first(:fresh => true)
-        assert_equal 2, @adapter.calls.size
-      end
-
-      context "reset_cache_store method" do
-
-        should "clear out cache store" do
-          @extend_model = Class.new(@model)
-          @extend_model.first
-          @model.reset_cache_store
-          @extend_model.first
-          assert_equal 2, @adapter.calls.size
-        end
-
-      end
-
-    end
-
-
-    #-----------------------------------------
-    # TRP: Persistence
-    #-----------------------------------------
-    context "persistence methods" do
-      setup do
-        @model.class_eval do
-          attributes :a, :b
-          write_with :test
-        end
-        @object = @model.new
-      end
-
-      should "call write method on the write_adapter when save called" do
-        assert @object.save
-        assert_equal @object, @model.write_adapter.last_call.last
-      end
-
-      should "call delete method on the write_adapter when delete called" do
-        @object.new_record = false
-        assert @object.delete
-        assert_equal @object, @model.write_adapter.last_call.last
-      end
-
-      should "not call delete method on the write adapter when new_record? is true" do
-        assert !@object.delete
-        assert !@model.write_adapter.last_call
-      end
-
-      should "set attribtues and save on update_attributes" do
-        obj = @model.new_from_data_store(:a => 'a', :b => 'b')
-        assert obj.update_attributes(:b => 'c')
-        assert_equal obj, @model.write_adapter.last_call.last
-        assert_equal 'a', obj.a
-        assert_equal 'c', obj.b
-      end
-
-      should "raise exception if save! or update_attributes! called and failed" do
-        @object.write_adapter.writes_return false
-        assert_raises(Perry::RecordNotSaved) { @object.save! }
-        assert_raises(Perry::RecordNotSaved) { @object.update_attributes!({}) }
-      end
-
-    end
-
-
-    #-----------------------------------------
     # TRP: Serialization
     #-----------------------------------------
     context "serialization module" do
@@ -544,7 +447,7 @@ class Perry::BaseTest < Test::Unit::TestCase
         @subwidgets = (1..5).collect { Factory(:subwidget).tap { |hsh| hsh.each_key { |k| hsh[k.to_s] = hsh.delete(k) } } }
         @schematic = Factory(:schematic).tap { |hsh| hsh.each_key { |k| hsh[k.to_s] = hsh.delete(k) } }
         @adapter.data = Factory(:widget).merge(:subwidgets => @subwidgets, :schematic => @schematic)
-        @widget = Perry::Test::Wearhouse::Widget.first
+        @widget = Perry::Test::Warehouse::Widget.first
       end
 
       context "contains_one association" do
@@ -554,7 +457,7 @@ class Perry::BaseTest < Test::Unit::TestCase
         end
 
         should "use the extended version of the associated class if available" do
-          assert_kind_of Perry::Test::ExtendedWearhouse::Schematic, @widget.schematic
+          assert_kind_of Perry::Test::ExtendedWarehouse::Schematic, @widget.schematic
         end
       end
 

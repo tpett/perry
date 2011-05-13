@@ -1,8 +1,17 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 
 class Perry::RelationTest < Test::Unit::TestCase
-  SINGLE_VALUE_METHODS = [:limit, :offset, :from, :fresh]
-  MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :where, :having, :includes]
+  SINGLE_VALUE_METHODS = Perry::Relation::SINGLE_VALUE_METHODS
+  MULTI_VALUE_METHODS = Perry::Relation::MULTI_VALUE_METHODS
+
+  def assert_relation_has_value(relation, method, expected_value)
+    value = if MULTI_VALUE_METHODS.include?(method)
+      relation.send("#{method}_values").first
+    else
+      relation.send("#{method}_value")
+    end
+    assert_equal expected_value, value
+  end
 
   context "Perry::Relation class" do
     setup do
@@ -33,11 +42,18 @@ class Perry::RelationTest < Test::Unit::TestCase
         relation = @relation.dup
         SINGLE_VALUE_METHODS.each { |method| relation = relation.merge(@relation.send(method, 'foo')) }
         hash = relation.to_hash
-        SINGLE_VALUE_METHODS.each do |method|
+        (SINGLE_VALUE_METHODS - [:includes]).each do |method|
           assert_equal 'foo', hash[method]
         end
+        assert_equal({:foo => {}}, hash[:includes])
       end
 
+      should "merge modifiers into new relation" do
+        relation = @relation.dup
+        value = { :foo => 'bar' }
+        relation = relation.merge(@relation.send(:modifiers, value))
+        assert_equal value, relation.send(:modifiers_value)
+      end
     end
 
     context "records accessor" do
@@ -60,7 +76,7 @@ class Perry::RelationTest < Test::Unit::TestCase
         assert !@adapter.last_call
       end
 
-      should "force a query to run with fresh scope even when records is set explicitly" do
+      should_eventually "force a query to run with fresh scope even when records is set explicitly" do
         assert_not_equal @records, @relation.fresh.all
         assert @adapter.last_call
       end
@@ -69,9 +85,10 @@ class Perry::RelationTest < Test::Unit::TestCase
 
     context "to_hash method" do
       setup do
-        @all_methods = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS
+        @all_methods = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS - [:includes]
         @loaded_relation = @relation.clone
         @all_methods.each { |method| @loaded_relation = @loaded_relation.send(method, 'foo') }
+        @loaded_relation = @loaded_relation.includes(:foo)
       end
 
       should "return only :sql key if :sql option is set" do
@@ -84,12 +101,18 @@ class Perry::RelationTest < Test::Unit::TestCase
         hash = @loaded_relation.to_hash
         @all_methods.each { |method| assert_equal 'foo', (v = hash[method]).is_a?(Array) ? v.first : v }
         assert_nil hash[:sql]
+        assert_equal({:foo => {}}, hash[:includes])
       end
 
       should "not include blank values" do
         hash = @relation.where('foo').to_hash
         assert_equal ['foo'], hash[:where]
         assert_equal [:where], hash.keys
+      end
+
+      should "not include :modifiers" do
+        hash = @loaded_relation.modifiers( :foo => 'bar').to_hash
+        assert !hash.keys.include?(:modifiers)
       end
 
       should "call any procs set on value methods to allow delayed execution" do
@@ -210,7 +233,7 @@ class Perry::RelationTest < Test::Unit::TestCase
         @relation.find(1)
         assert_equal [{:id => 1}], @adapter.last_call.last[:where]
         @relation.find("1")
-        assert_equal [{:id => 1}], @adapter.last_call.last[:where]
+        assert_equal [{:id => "1"}], @adapter.last_call.last[:where]
       end
 
       should "accept array of primary keys with finder options" do
@@ -245,34 +268,6 @@ class Perry::RelationTest < Test::Unit::TestCase
       end
     end
 
-    context "fresh method" do
-      should "force relation to refetch records if it has already run when true passed" do
-        @relation.to_a
-        @relation.to_a
-        @relation.fresh.to_a
-        assert_equal 2, @adapter.calls.size
-      end
-
-      should "set fresh_value to true by default" do
-        assert !@relation.fresh_value
-        @relation = @relation.fresh
-        assert @relation.fresh_value
-      end
-
-      should "not set fresh_value to true if fresh(false) passed" do
-        assert !@relation.fresh_value
-        @relation = @relation.fresh(false)
-        assert !@relation.fresh_value
-      end
-
-      should "not force refetch records when fresh(false) called" do
-        @relation.to_a
-        @relation.to_a
-        @relation.fresh(false).to_a
-        assert_equal 1, @adapter.calls.size
-      end
-    end
-
     context "search method" do
       # TODO: Pull this code out of this gem and
     end
@@ -280,13 +275,16 @@ class Perry::RelationTest < Test::Unit::TestCase
     context "apply_finder_options method" do
       setup do
         @model.send :attributes, :id
-        @all_methods = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS
+        @all_methods = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS + [:modifiers] - [:includes]
       end
 
       should "allow any of the regular query methods as keys" do
-        finder_hash = @all_methods.inject({}) { |hash, method| hash.merge({ method => 'foo' }) }
-        hash = @relation.apply_finder_options(finder_hash).to_hash
-        @all_methods.each { |method| assert_equal 'foo', (v = hash[method]).is_a?(Array) ? v.first : v }
+        test_value = { :foo => 'bar' } # modifiers value requires a hash or a proc
+        finder_hash = @all_methods.inject({}) { |hash, method| hash.merge({ method => test_value }) }
+        relation = @relation.apply_finder_options(finder_hash)
+        @all_methods.each do |method|
+          assert_relation_has_value(relation, method, test_value)
+        end
       end
 
       should "allow :conditions as alias for :where" do
@@ -298,7 +296,7 @@ class Perry::RelationTest < Test::Unit::TestCase
       end
 
       should "allow :include key as alias for :includes" do
-        assert_equal ['foo'], @relation.apply_finder_options(:include => 'foo').to_hash[:includes]
+        assert_equal({ :foo => {} }, @relation.apply_finder_options(:include => 'foo').to_hash[:includes])
       end
 
       should "allow :search key and pass through to search method" do
@@ -329,7 +327,7 @@ class Perry::RelationTest < Test::Unit::TestCase
     end
 
     # Single query methods
-    SINGLE_VALUE_METHODS.each do |method|
+    (SINGLE_VALUE_METHODS - [:includes]).each do |method|
       context "#{method} query method" do
         should "clone new relation and replace value in #{method}_value" do
           new_relation = @relation.send(method, 'foo')
@@ -348,6 +346,84 @@ class Perry::RelationTest < Test::Unit::TestCase
       end
     end
 
+    context "includes query method setting hash value" do
+      should "split multi item hashes into multiple entries" do
+        new_relation = @relation.includes(:foo => :bar, :baz => :perry).includes(:foo => :poo).includes(:foo)
+        assert_equal({:foo => {:bar => {}, :poo => {}}, :baz => { :perry => {} }},
+                     new_relation.includes_value)
+      end
+    end
+
+    #-----------------------------------------
+    # Query modifiers
+    #-----------------------------------------
+    context "modifiers" do
+      setup do
+        @mv1 = { :foo => 'bar' }
+        @mv2 = { :biz => 'baz' }
+        @mv3 = { :foo => 'boo' }
+        @p1 = Proc.new { @mv3 }
+      end
+
+      should "delegate :modifiers to scoped" do
+        assert @model.scoped.respond_to?(:modifiers)
+        assert @model.respond_to?(:modifiers)
+      end
+
+      should "clone new relation and replace the modifiers value" do
+        new_relation = @relation.modifiers(@mv1)
+        assert_equal({}, @relation.modifiers_value)
+        assert_equal @mv1, new_relation.modifiers_value
+      end
+
+      should "reset previous modifier values if it receives nil as an argument" do
+        relation = @relation.modifiers(@mv1)
+        assert_equal(@mv1, relation.modifiers_value)
+        relation = relation.modifiers(nil)
+        assert_equal({}, relation.modifiers_value)
+      end
+
+      should "be usable in a scope" do
+        value = { :expires_at => true }
+        @model.class_eval do
+          scope :expire, modifiers(value)
+        end
+        assert_equal value, @model.expire.modifiers_value
+      end
+
+      should "always return a hash" do
+        assert_equal({}, @relation.modifiers_value)
+      end
+
+      should "merge values from multiple calls into a single hash" do
+        relation = @relation.modifiers(@mv1).modifiers(@mv2)
+        assert_equal @mv1.merge(@mv2), relation.modifiers_value
+      end
+
+      should "merge hashes returned from calling Proc values" do
+        relation = @relation.modifiers(@p1)
+        assert_equal @mv3, relation.modifiers_value
+      end
+
+      should "raise an error if a value is neither a hash nor a proc" do
+        relation = @relation.modifiers(:errk!)
+        assert_raise TypeError do
+          relation.modifiers_value
+        end
+      end
+
+      should "raise an error if a value is a proc that does not return a hash" do
+        relation = @relation.modifiers(Proc.new { :gah! })
+        assert_raise TypeError do
+          relation.modifiers_value
+        end
+      end
+
+      should "merge values in the order they were given" do
+        relation = @relation.modifiers(@p1).modifiers(@mv1).modifiers(@mv2)
+        assert_equal @mv3.merge(@mv1).merge(@mv2), relation.modifiers_value
+      end
+    end
 
   end
 

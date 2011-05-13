@@ -7,9 +7,10 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
   #-----------------------------------------
   context "restful http adapter" do
     setup do
-      @model = Class.new(Perry::Test::Base)
+      @model = Class.new(Perry::Test::SimpleModel)
       @model.class_eval do
-        attributes :id, :a, :b, :c
+        attributes :id
+        read_with :test
         write_with :restful_http
         configure_write do |config|
           config.host = 'http://test.local'
@@ -23,56 +24,94 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
       FakeWeb.clean_registry
     end
 
-    should "do a PUT when saving an existing record" do
-      FakeWeb.register_uri(:put, 'http://test.local/foo/1', :body => "OK")
-      instance = @model.new_from_data_store(:id => 1, :a => 'a', :b => 'b', :c => 'c')
-      instance.a = 'change'
-      assert instance.save
-      assert FakeWeb.last_request && FakeWeb.last_request.body_exist?
-      assert_kind_of Net::HTTP::Put, FakeWeb.last_request
-    end
+    [:post, :put, :delete].each do |http_method|
+      new_record = http_method == :put
+      test_method = http_method == :delete ? :delete : :write
 
-    should "do a POST when saving a new record" do
-      @model.class_eval do
-        configure_write do |config|
-          config.format = '.json'
+      context "##{test_method} method for #{new_record ? 'a new' : 'an existing'} record" do
+        setup do
+          @model.class_eval do
+            configure_write do |config|
+              config.format = '.json'
+            end
+          end
+          @instance = @model.new
+
+          case http_method
+          when :post
+            @uri = 'http://test.local/foo.json'
+          when :put, :delete
+            @instance.id = 1
+            @instance.new_record = false
+            @uri = "http://test.local/foo/#{@instance.id}.json"
+          end
+
+          @adapter_method = test_method
+        end
+
+        teardown do
+          FakeWeb.last_request = nil
+        end
+
+        should "return a Response object" do
+          FakeWeb.register_uri(http_method, @uri, :body => 'OK')
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          assert @response.is_a?(Perry::Persistence::Response)
+        end
+
+        should "set Response#status to HTTP status" do
+          FakeWeb.register_uri(http_method, @uri, :body => 'OK')
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          assert_equal 200, @response.status
+        end
+
+        should "set Response#success to true if status indicates success" do
+          FakeWeb.register_uri(http_method, @uri, :body => 'OK')
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          assert @response.success
+        end
+
+        should "set Response#success to false if status indicates failure or is unkown" do
+          FakeWeb.register_uri(http_method, @uri, :body => 'oops!', :status => [500, 'Error'])
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          assert !@response.success
+        end
+
+        should "set Response#meta to a hash of the HTTP response headers" do
+          FakeWeb.register_uri(http_method, @uri, :response => mock_http_response('json_response'))
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          headers = { 'server' => 'test', 'content-type' => 'application/json' }
+          assert_equal headers, @response.meta
+        end
+
+        should "set Response#raw to the unmodified HTTP response body" do
+          fake_response = mock_http_response('json_response')
+          FakeWeb.register_uri(http_method, @uri, :response => fake_response)
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          assert_equal fake_response.split(/\r\n\r\n/)[1], @response.raw
+        end
+
+        should "set Response#raw_format to the correct format" do
+          FakeWeb.register_uri(http_method, @uri, :body => 'OK')
+          @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+          assert_equal :json, @response.raw_format
+        end
+
+        unless http_method == :post
+          should "return a failure response if object's primary key value is nil" do
+            @instance.id = nil
+            FakeWeb.register_uri(http_method, @uri, :body => 'OK')
+
+            assert_nothing_raised do
+              @response = @model.write_adapter.send(@adapter_method, :object => @instance)
+            end
+
+            assert_nil FakeWeb.last_request
+            assert_equal false, @response.success
+            assert_equal Perry::Adapters::RestfulHTTPAdapter::KeyError.new.message, @response.errors[:base]
+          end
         end
       end
-      FakeWeb.register_uri(:post, 'http://test.local/foo.json', :body => "OK")
-      instance = @model.new(:id => 2, :a => 'a', :b => 'b', :c => 'c')
-      assert instance.save
-      assert FakeWeb.last_request && FakeWeb.last_request.body_exist?
-      assert_kind_of Net::HTTP::Post, FakeWeb.last_request
-    end
-
-    should "do a DELETE when deleting an existing record" do
-      FakeWeb.register_uri(:delete, 'http://test.local/foo/1', :body => "OK")
-      instance = @model.new_from_data_store(:id => 1, :a => 'a', :b => 'b', :c => 'c')
-      assert instance.delete
-      assert FakeWeb.last_request
-      assert_kind_of Net::HTTP::Delete, FakeWeb.last_request
-    end
-
-    should "merge in default_options set at the class level" do
-      @model.class_eval do
-        configure_write do |config|
-          config.default_options = { :password => "secret" }
-        end
-      end
-      FakeWeb.register_uri(:put, 'http://test.local/foo/1', :body => "OK")
-      instance = @model.new_from_data_store(:id => 1)
-      assert instance.save
-      assert FakeWeb.last_request
-      assert FakeWeb.last_request.body.match(/secret/)
-    end
-
-    should "merge in default_options set at the instance level" do
-      FakeWeb.register_uri(:put, 'http://test.local/foo/1', :body => "OK")
-      instance = @model.new_from_data_store(:id => 1)
-      instance.write_options = { :default_options => { :api_key => "myapikey" }}
-      assert instance.save
-      assert FakeWeb.last_request
-      assert FakeWeb.last_request.body.match(/myapikey/)
     end
 
     should "use :id for the default primary_key" do

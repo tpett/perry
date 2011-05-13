@@ -65,65 +65,77 @@ class Perry::AbstractAdapterTest < Test::Unit::TestCase
       end
     end
 
-    context "call instnace method" do
+    context "call instance method" do
 
       should "take two arguments" do
         assert_equal 2, @abstract.instance_method('call').arity
       end
 
-      should "call each middleware in order followed by the mode method" do
-        class FakeMiddleware
-          @@output = []
-          def initialize(adapter, config={})
-            @adapter = adapter
-            @config = config
+      should "set the mode option before calling the stack" do
+        class ModeAdapter < Class.new(@abstract)
+          def read(options)
+            [{ :mode => options[:mode] }]
           end
-
-          def call(options)
-            @@output << [self.class.name.split('::').last, @config, options]
-            @adapter.call(options)
-          end
-
-          def self.log(msg=nil)
-            if msg
-              @@output << log
-            else
-              @@output
-            end
+          def stack_items
+            []
           end
         end
-        class MiddlewareA < FakeMiddleware; end
-        class MiddlewareB < FakeMiddleware; end
+
+        adapter = ModeAdapter.new(:mode_adapter, {})
+        [:read, :write, :delete].each do |mode|
+          assert_equal mode, adapter.call(mode, {}).first[:mode]
+        end
+      end
+
+      should "call stack items in order: processors, model bridge, middlewares" do
+        Perry::Test::FakeAdapterStackItem.reset
+        class MiddlewareA < Perry::Test::FakeAdapterStackItem; end
+        class MiddlewareB < Perry::Test::FakeAdapterStackItem; end
+        class ProcessorA < Perry::Test::FakeAdapterStackItem; end
+        class ProcessorB < Perry::Test::FakeAdapterStackItem; end
 
         class Foo < @abstract
           register_as :foo
 
           def read(options)
-            FakeMiddleware.log << ["read", options]
-            []
+            Perry::Test::FakeAdapterStackItem.log << ["read", options]
+            [ { :id => 1 } ]
           end
         end
 
         config = proc do |config|
           config.add_middleware(MiddlewareA, :foo => 'A')
+          config.add_processor(ProcessorA, :bar => 'A')
+        end
+
+        config2 = proc do |config|
           config.add_middleware(MiddlewareB, :foo => 'B')
+          config.add_processor(ProcessorB, :bar => 'B')
         end
 
         adapter = Foo.new(:foo, config)
+        adapter = adapter.extend_adapter(config2)
 
-        adapter.call('read', { :object => 'Baz'})
+        relation = Perry::Test::Blog::Site.scoped
+        adapter.call('read', { :relation => relation })
 
         correct = [
-          [ "MiddlewareA", { :foo => 'A' }, { :object => 'Baz' } ],
-          [ "MiddlewareB", { :foo => 'B' }, { :object => 'Baz' } ],
-          [ "read", { :object => 'Baz'} ]
+          [ "ProcessorA", { :bar => 'A' }, { :relation => relation, :mode => :read } ],
+          [ "ProcessorB", { :bar => 'B' }, { :relation => relation, :mode => :read } ],
+          [ "MiddlewareA", { :foo => 'A' }, { :relation => relation, :mode => :read  } ],
+          [ "MiddlewareB", { :foo => 'B' }, { :relation => relation, :mode => :read } ],
+          [ "read", { :relation => relation, :mode => :read } ],
+          [ Hash ],
+          [ Hash ],
+          [ Perry::Test::Blog::Site ],
+          [ Perry::Test::Blog::Site ],
         ]
 
-        assert_equal(correct, FakeMiddleware.log)
+        assert_equal(correct, Perry::Test::FakeAdapterStackItem.log)
 
-        adapter.call('read', { :object => 'Baz'})
+        adapter.call('read', { :relation => relation })
 
-        assert_equal(correct + correct, FakeMiddleware.log)
+        assert_equal(correct + correct, Perry::Test::FakeAdapterStackItem.log)
       end
 
     end
@@ -179,12 +191,26 @@ class Perry::AbstractAdapterTest < Test::Unit::TestCase
         assert_equal -2, @config.instance_method(:add_middleware).arity
       end
 
-      should "push value on array in :middlware value on marshal" do
+      should "push value on array in :middlwares value on marshal" do
         conf = @config.new
         conf.add_middleware('Value')
         assert_equal({ :middlewares => [['Value', {}]] }, conf.marshal_dump)
       end
 
+    end
+
+    context "add_processor instance method" do
+      should "take 2 parameters with the second being optional" do
+        method = @config.instance_method(:add_processor)
+        assert method
+        assert_equal -2, method.arity
+      end
+
+      should "push value on array in :processors value on marshal" do
+        config = @config.new
+        config.add_processor('Poop', :foo => :bar)
+        assert_equal({ :processors => [['Poop', { :foo => :bar }]] }, config.to_hash)
+      end
     end
 
     context "to_hash instance method" do

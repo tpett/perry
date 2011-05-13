@@ -1,13 +1,48 @@
 module Perry::Test
   class Base < Perry::Base
     read_with :test
+    configure_read do |config|
+      config.add_processor Perry::Processors::PreloadAssociations, {}
+    end
   end
 
-  module Wearhouse
+  class SimpleModel < Perry::Test::Base
+    attributes :id
+    read_with :test
+    write_with :test
+  end
+
+
+  class FakeAdapterStackItem
+    @@output = []
+    def initialize(adapter, config={})
+      @adapter = adapter
+      @config = config
+    end
+
+    def call(options)
+      @@output << [self.class.name.split('::').last, @config, options]
+      @adapter.call(options).tap { |obj| @@output << (obj.is_a?(Array) ? obj.collect(&:class) : obj.class) }
+    end
+
+    def self.log(msg=nil)
+      if msg
+        @@output << log
+      else
+        @@output
+      end
+    end
+
+    def self.reset
+      @@output = []
+    end
+  end
+
+  module Warehouse
     class Widget < Perry::Test::Base
       attributes :string, :integer, :float, :text
-      contains_many :subwidgets, :class_name => "Perry::Test::Wearhouse::Subwidget"
-      contains_one :schematic, :class_name => "Perry::Test::Wearhouse::Schematic"
+      contains_many :subwidgets, :class_name => "Perry::Test::Warehouse::Subwidget"
+      contains_one :schematic, :class_name => "Perry::Test::Warehouse::Schematic"
     end
 
     class Subwidget < Perry::Test::Base
@@ -18,8 +53,8 @@ module Perry::Test
     end
   end
 
-  module ExtendedWearhouse
-    class Schematic < Perry::Test::Wearhouse::Schematic; end
+  module ExtendedWarehouse
+    class Schematic < Perry::Test::Warehouse::Schematic; end
   end
 
   # TRP: Used for testing external associations
@@ -76,7 +111,8 @@ module Perry::Test
 
     class Person < Perry::Test::Base
       attributes :id, :name, :manager_id
-      configure_cacheable
+      # TODO: add caching middleware
+      #configure_cacheable
       belongs_to :manager, :class_name => "Perry::Test::Blog::Person", :foreign_key => :manager_id
       has_many :authored_comments, :class_name => "Perry::Test::Blog::Comment", :foreign_key => :person_id
       has_many :articles, :class_name => "Perry::Test::Blog::Article", :foreign_key => :author_id

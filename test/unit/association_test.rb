@@ -10,7 +10,13 @@ class Perry::AssociationTest < Test::Unit::TestCase
     end
 
     context "eager_loadable? method" do
-      should "return true if options do not rely on instance data" do
+      setup do
+        @klass = Perry::Association::BelongsTo
+        @model = Class.new(Perry::Base)
+        @association = @klass.new(@model, 'foo')
+      end
+
+      should "return true if options do not rely on instance data and not polymorphic" do
         assert @association.eager_loadable?
       end
 
@@ -18,6 +24,11 @@ class Perry::AssociationTest < Test::Unit::TestCase
         Perry::Relation::FINDER_OPTIONS.each do |option|
           assert !@klass.new(@model, 'bar', option => lambda {}).eager_loadable?
         end
+      end
+
+      should "return false for polymorphic belongs to associations" do
+        association = @klass.new(@model, 'bar', :polymorphic => true)
+        assert !association.eager_loadable?
       end
     end
 
@@ -54,21 +65,25 @@ class Perry::AssociationTest < Test::Unit::TestCase
 
     end
 
+    should "sanitize type attributes" do
+      assert_equal 'Foo', @association.send(:sanitize_type_attribute, 'Foo')
+      assert_equal 'Foo_bar', @association.send(:sanitize_type_attribute, 'Foo_bar')
+      assert_equal 'Foo1234', @association.send(:sanitize_type_attribute, 'Foo1234')
+      assert_equal 'Foo_1234', @association.send(:sanitize_type_attribute, 'Foo_1234')
+      assert_equal 'Foo_1234', @association.send(:sanitize_type_attribute, 'Foo_1234 asdf')
+      assert_equal '', @association.send(:sanitize_type_attribute, '_Foo') # no match
+    end
   end
 
   context ":belongs_to association" do
     setup do
       @klass = Perry::Association::BelongsTo
-      @model = Class.new(Perry::Base)
-      @association = @klass.new(@model, "foo")
+      @model = new_class(Perry::Base)
+      @association = @klass.new(@model, "foo", :class_name => @model.to_s)
     end
 
     should "set type to :belongs_to" do
       assert_equal :belongs_to, @association.type
-    end
-
-    should "use :id as default primary key" do
-      assert_equal :id, @association.primary_key
     end
 
     should "return false for collection?" do
@@ -84,9 +99,29 @@ class Perry::AssociationTest < Test::Unit::TestCase
       assert @klass.new(@model, 'bar', :polymorphic => true).polymorphic?
     end
 
+    should "use the target class's custom primary key in #scope method" do
+      source_model = new_class(Perry::Base)
+      source_model.class_eval do
+        attributes :id, :foo_id, :foo_type
+      end
+
+      target_model = new_class(Perry::Base)
+      target_model.class_eval do
+        attributes :custom
+        set_primary_key :custom
+      end
+
+      association = @klass.new(source_model, :foo, :polymorphic => true)
+      source_instance = source_model.new
+      source_instance.attributes.merge!('foo_id' => 1, 'foo_type' => target_model.to_s)
+
+      assert_equal({ :custom => 1 }, association.scope(source_instance).to_hash[:where].first)
+    end
+
     context "scope method" do
       setup do
         @article = Perry::Test::Blog::Article
+        @comment = Perry::Test::Blog::Comment
       end
 
       should "return nil if no foreign_key present" do
@@ -99,13 +134,24 @@ class Perry::AssociationTest < Test::Unit::TestCase
         assert_equal(Perry::Relation, @article.defined_associations[:site].scope(record).class)
       end
 
-      should "the scope should have the options for he association query" do
+      should "the scope should have the options for the association query" do
         record = @article.new(:site_id => 1)
         assert_equal({ :id => 1 }, @article.defined_associations[:site].scope(record).where_values.first)
       end
 
-    end
+      should "composite array of primary keys into query if argument is an array of records" do
+        records = [1, 2, 3].collect { |i| @article.new(:site_id => i) }
+        assert_equal({ :id => [1, 2, 3] },
+                     @article.defined_associations[:site].scope(records).where_values.first)
+      end
 
+      should "raise AssociationPreloadNotSupported for polymotphic associations with arrays" do
+        records = [1, 2, 3].collect { |i| @comment.new(:parent_id => i) }
+        assert_raises(Perry::AssociationPreloadNotSupported) do
+          @comment.defined_associations[:parent].scope(records)
+        end
+      end
+    end
   end
 
   context "has associations" do
@@ -147,6 +193,7 @@ class Perry::AssociationTest < Test::Unit::TestCase
     context "scope method" do
       setup do
         @article = Perry::Test::Blog::Article
+        @site = Perry::Test::Blog::Site
       end
 
       should "return nil if no foreign_key present" do
@@ -171,6 +218,20 @@ class Perry::AssociationTest < Test::Unit::TestCase
         assert_equal "text LIKE '%awesome%'",
           @article.defined_associations[:awesome_comments].scope(record).where_values.first
       end
+
+      should "composite array of primary keys into query if argument is an array of records" do
+        records = [1, 2, 3].collect { |i| @article.new(:id => i) }
+        assert_equal([{ :parent_id => [1, 2, 3] }, { :parent_type => "Article" }],
+          @article.defined_associations[:comments].scope(records).where_values)
+      end
+
+      should "raise AssociationPreloadNotSupported if not an eager loadable association" do
+        records = [1, 2, 3].collect { |i| @site.new(:id => i) }
+        assert_raises(Perry::AssociationPreloadNotSupported) do
+          @site.defined_associations[:awesome_comments].scope(records)
+        end
+      end
+
     end
 
     context "specifically the :has_many association" do
@@ -373,7 +434,7 @@ class Perry::AssociationTest < Test::Unit::TestCase
           relation.all
           assert_equal 2, @adapter.calls.size - before_count
 
-          relation.fresh.all
+          relation.modifiers(:fresh => true).all
           assert_equal 4, @adapter.calls.size - before_count
         end
       end
@@ -398,5 +459,45 @@ class Perry::AssociationTest < Test::Unit::TestCase
 
   end
 
+  context "An association's default primary key" do
+    setup do
+      @source_model = new_class(Perry::Base)
+      @source_model.class_eval do
+        attributes :custom, :foo_id, :foo_type
+        set_primary_key :custom
+      end
+      @target_model = new_class(Perry::Base)
+      @target_model.class_eval do
+        attributes :also_custom
+        set_primary_key :also_custom
+      end
+    end
+
+    should "always be overriden by options[:primary_key]" do
+      association = Perry::Association::BelongsTo.new(nil, :a, :primary_key => :asdf)
+      assert_equal :asdf, association.primary_key
+      association = Perry::Association::Has.new(nil, :a, :primary_key => :asdf)
+      assert_equal :asdf, association.primary_key
+    end
+
+    should "be the target class's primary key in a belongs to association" do
+      association = Perry::Association::BelongsTo.new(@source_model, :foo, :class_name => @target_model.to_s)
+      assert_equal @target_model.primary_key, association.primary_key
+    end
+
+    should "be the target class's primary key in a polymorphic belongs to association" do
+      association = Perry::Association::BelongsTo.new(@source_model, :foo, :polymorphic => true)
+      source_instance = @source_model.new
+      source_instance.attributes.merge!('foo_type' => @target_model.to_s)
+      assert_equal @target_model.primary_key, association.primary_key(source_instance)
+    end
+
+    should "be the source class's primary key in a has association" do
+      association = Perry::Association::HasOne.new(@source_model, :foo, :class_name => @target_model.to_s)
+      assert_equal @source_model.primary_key, association.primary_key
+      association = Perry::Association::HasMany.new(@source_model, :foo, :class_name => @target_model.to_s)
+      assert_equal @source_model.primary_key, association.primary_key
+    end
+  end
 
 end

@@ -1,3 +1,5 @@
+require 'perry/persistence/response'
+
 module Perry::Persistence
 
   module ClassMethods
@@ -24,7 +26,8 @@ module Perry::Persistence
     end
 
     def save
-      write_adapter.write(self)
+      raise Perry::PerryError.new("cannot write a frozen object") if frozen?
+      write_adapter.call(:write, :object => self).success
     end
 
     def save!
@@ -41,9 +44,43 @@ module Perry::Persistence
     end
 
     def destroy
-      write_adapter.delete(self) unless self.new_record?
+      raise Perry::PerryError.new("cannot destroy a frozen object") if frozen?
+      unless self.new_record? || self.send(primary_key).nil?
+        write_adapter.call(:delete, :object => self).success
+      end
     end
     alias :delete :destroy
+
+    def destroy!
+      destroy or raise Perry::RecordNotSaved
+    end
+    alias :delete! :destroy!
+
+    def reload
+      self.attributes = self.class.where(primary_key => self.send(primary_key)).first.attributes
+    end
+
+    # Calls Object#freeze on the model and on the attributes hash in addition to
+    # calling #freeze! to prevent the model from being saved or destroyed.
+    #
+    def freeze
+      freeze!
+      attributes.freeze
+      super
+    end
+
+    # Prevents the model from being saved or destroyed in the future while still
+    # allowing the model and its attributes hash to be modified.
+    #
+    def freeze!
+      @frozen = true
+    end
+
+    # Returns true if ether #freeze or #freeze! has been called on the model.
+    #
+    def frozen?
+      !!@frozen
+    end
 
   end
 
@@ -53,3 +90,4 @@ module Perry::Persistence
   end
 
 end
+

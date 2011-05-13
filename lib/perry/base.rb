@@ -2,28 +2,29 @@
 require 'perry/errors'
 require 'perry/associations/contains'
 require 'perry/associations/external'
-require 'perry/association_preload'
-require 'perry/cacheable'
 require 'perry/serialization'
 require 'perry/relation'
 require 'perry/scopes'
 require 'perry/adapters'
-
+require 'perry/middlewares'
+require 'perry/processors'
 
 class Perry::Base
   include Perry::Associations::Contains
   include Perry::Associations::External
-  include Perry::AssociationPreload
   include Perry::Serialization
   include Perry::Scopes
 
-  attr_accessor :attributes, :new_record, :read_options, :write_options
-  alias :new_record? :new_record
+  DEFAULT_PRIMARY_KEY = :id
 
-  class_inheritable_accessor :read_adapter, :write_adapter, :cacheable,
+  attr_accessor :attributes, :new_record, :saved, :read_options, :write_options
+  alias :new_record? :new_record
+  alias :saved? :saved
+  alias :persisted? :saved?
+
+  class_inheritable_accessor :read_adapter, :write_adapter,
     :defined_attributes, :scoped_methods, :defined_associations
 
-  self.cacheable = false
   self.defined_associations = {}
   self.defined_attributes = []
 
@@ -34,6 +35,14 @@ class Perry::Base
 
   def [](attribute)
     @attributes[attribute.to_s]
+  end
+
+  def errors
+    @errors ||= {}
+  end
+
+  def primary_key
+    self.class.primary_key
   end
 
   protected
@@ -61,7 +70,22 @@ class Perry::Base
 
     delegate :find, :first, :all, :search, :apply_finder_options, :to => :scoped
     delegate :select, :group, :order, :joins, :where, :having, :limit, :offset,
-      :from, :fresh, :to => :scoped
+      :from, :includes, :to => :scoped
+    delegate :modifiers, :to => :scoped
+
+    def primary_key
+      @primary_key || DEFAULT_PRIMARY_KEY
+    end
+
+    # Allows you to specify an attribute other than :id to use as your models
+    # primary key.
+    #
+    def set_primary_key(attribute)
+      unless defined_attributes.include?(attribute.to_s)
+        raise Perry::PerryError.new("cannot set primary key to non-existent attribute")
+      end
+      @primary_key = attribute.to_sym
+    end
 
     def new_from_data_store(hash)
       if hash.nil?
@@ -96,8 +120,7 @@ class Perry::Base
     protected
 
     def fetch_records(relation)
-      options = relation.to_hash
-      self.read_adapter.read(options).collect { |hash| self.new_from_data_store(hash) }.compact.tap { |result| eager_load_associations(result, relation) }
+      self.read_adapter.call(:read, :relation => relation).compact
     end
 
     def read_with(adapter_type)
@@ -133,13 +156,6 @@ class Perry::Base
         scoped.send(method, *args, &block)
       else
         super
-      end
-    end
-
-    def configure_cacheable(options={})
-      unless cacheable
-        self.send(:include, Perry::Cacheable)
-        self.enable_caching(options)
       end
     end
 

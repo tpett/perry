@@ -1,5 +1,6 @@
 require 'perry/relation/query_methods'
 require 'perry/relation/finder_methods'
+require 'perry/relation/modifiers'
 
 # TRP: The concepts behind this class are heavily influenced by ActiveRecord::Relation v.3.0.0RC1
 # => http://github.com/rails/rails
@@ -8,13 +9,15 @@ class Perry::Relation
   attr_reader :klass
   attr_accessor :records
 
-  SINGLE_VALUE_METHODS = [:limit, :offset, :from, :fresh]
-  MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :includes, :where, :having]
+  SINGLE_VALUE_METHODS = [:limit, :offset, :includes, :from]
+  MULTI_VALUE_METHODS = [:select, :group, :order, :joins, :where, :having]
 
-  FINDER_OPTIONS = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS + [:conditions, :search, :sql]
+  QUERY_METHODS = SINGLE_VALUE_METHODS + MULTI_VALUE_METHODS
+  FINDER_OPTIONS = QUERY_METHODS + [:conditions, :search, :sql]
 
   include Perry::QueryMethods
   include Perry::FinderMethods
+  include Perry::Modifiers
 
   def initialize(klass)
     @klass = klass
@@ -35,6 +38,8 @@ class Perry::Relation
     MULTI_VALUE_METHODS.each do |option|
       merged_relation = merged_relation.send(option, *r.send("#{option}_values"))
     end
+
+    merged_relation.send(:modifiers_array=, r.send(:modifiers_array))
 
     merged_relation
   end
@@ -76,7 +81,7 @@ class Perry::Relation
   end
 
   def eager_load?
-    @includes_values && !@includes_values.empty?
+    @includes_value
   end
 
   def inspect

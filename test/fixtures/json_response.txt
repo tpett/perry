@@ -1,0 +1,5 @@
+HTTP/1.1 200 OK
+Server: test
+Content-Type: application/json
+
+{"status":2,"format":"zip","file_name":"prepro-artwork-package","download_key":"0dd0ff127473eff38ae482b7c9233857d46809d5","created_at":"2011-05-09T12:38:20-05:00","id":43}
