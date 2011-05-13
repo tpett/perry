@@ -83,7 +83,8 @@ module Perry::Adapters
 
     def build_params_from_attributes(object)
       if self.config[:post_body_wrapper]
-        params = self.config[:default_options] || {}
+        defaults = self.config[:default_options]
+        params = defaults ? defaults.dup : {}
         params.merge!(object.write_options[:default_options]) if object.write_options.is_a?(Hash) && object.write_options[:default_options].is_a?(Hash)
 
         object.attributes.each do |attribute, value|
