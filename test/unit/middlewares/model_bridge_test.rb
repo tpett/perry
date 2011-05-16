@@ -73,7 +73,7 @@ class Perry::Middlewares::ModelBridgeTest < Test::Unit::TestCase
       end
 
       teardown do
-        @model.read_adapter.reset
+        @model.read_adapter.reset if @model.read_adapter
         @model.write_adapter.reset
       end
 
@@ -100,6 +100,15 @@ class Perry::Middlewares::ModelBridgeTest < Test::Unit::TestCase
 
         should "raise if Response does not have a value for the model's primary key in the Response#model_attributes collection" do
           assert_raise Perry::PerryError do
+            adapter = SuccessAdapter.new
+            adapter.response.parsed = nil
+            @bridge.new(adapter).call(@options)
+          end
+        end
+
+        should "not raise if model does not have a read_adapter configured" do
+          @klass.send(:read_with, :none)
+          assert_nothing_raised do
             adapter = SuccessAdapter.new
             adapter.response.parsed = nil
             @bridge.new(adapter).call(@options)

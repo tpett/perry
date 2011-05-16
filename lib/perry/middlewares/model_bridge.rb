@@ -37,7 +37,7 @@ class Perry::Middlewares::ModelBridge
   def update_model_after_save(response, model)
     model.saved = response.success
     if model.saved
-      if model.new_record?
+      if model.new_record? && !model.read_adapter.nil?
         key = response.model_attributes[model.primary_key]
         raise Perry::PerryError.new('primary key not included in response') if key.nil?
         model.send("#{model.primary_key}=", key)
