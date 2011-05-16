@@ -199,7 +199,9 @@ class Perry::Base
       current_adapter = read_inheritable_attribute :"#{mode}_adapter"
       type = config[:type] if config.is_a?(Hash)
 
-      new_adapter = if current_adapter
+      new_adapter = if type == :none
+        nil
+      elsif current_adapter
         current_adapter.extend_adapter(config)
       else
         Perry::Adapters::AbstractAdapter.create(type, config)

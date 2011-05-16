@@ -37,6 +37,44 @@ class Perry::BaseTest < Test::Unit::TestCase
       end
     end
 
+    context "read_with method" do
+      setup do
+        @model = Class.new(Perry::Base)
+      end
+
+      should "set the read adapter to specified type" do
+        assert_equal nil, @model.read_adapter
+        @model.send(:read_with, :test)
+        assert_equal Perry::Test::TestAdapter, @model.read_adapter.class
+      end
+
+      should "set unset the read adapter if set to :none" do
+        @model.send(:read_with, :test)
+        assert_equal Perry::Test::TestAdapter, @model.read_adapter.class
+        @model.send(:read_with, :none)
+        assert_equal nil, @model.read_adapter
+      end
+    end
+
+    context "write_with method" do
+      setup do
+        @model = Class.new(Perry::Base)
+      end
+
+      should "set the read adapter to specified type" do
+        assert_equal nil, @model.write_adapter
+        @model.send(:write_with, :test)
+        assert_equal Perry::Test::TestAdapter, @model.write_adapter.class
+      end
+
+      should "set unset the read adapter if set to :none" do
+        @model.send(:write_with, :test)
+        assert_equal Perry::Test::TestAdapter, @model.write_adapter.class
+        @model.send(:write_with, :none)
+        assert_equal nil, @model.write_adapter
+      end
+    end
+
     # TRP: new_record flag control
     should "set new_record true when a new object is created directly" do
       assert @model.new.new_record?
