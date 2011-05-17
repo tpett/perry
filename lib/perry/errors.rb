@@ -16,6 +16,11 @@ module Perry
   class RecordNotSaved < PerryError
   end
 
+  # Raised when the adapter returns or detects a response that Perry does not understand
+  #
+  class MalformedResponse < PerryError
+  end
+
   # Used for all association related errors
   #
   class AssociationError < PerryError

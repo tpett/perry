@@ -3,14 +3,17 @@ require 'active_support/core_ext/array'
 require 'active_support/core_ext/class/inheritable_attributes'
 require 'active_support/core_ext/hash/deep_merge'
 require 'active_support/core_ext/hash/keys'
+require 'active_support/core_ext/hash/conversions'
 begin
   require 'active_support/core_ext/duplicable' #ActiveSupport 2.3.x
   Hash.send(:include, ActiveSupport::CoreExtensions::Hash::DeepMerge) unless Hash.instance_methods.include?('deep_merge')
+  Hash.send(:include, ActiveSupport::CoreExtensions::Hash::Conversions) unless Hash.instance_methods.include?('to_query')
   Hash.send(:include, ActiveSupport::CoreExtensions::Hash::Keys) unless Hash.instance_methods.include?('symbolize_keys')
 rescue LoadError => exception
   require 'active_support/core_ext/object/duplicable' #ActiveSupport 3.0.x
 end
 require 'active_support/core_ext/module/delegation'
+require 'active_support/core_ext/object/conversions'
 
 # TRP: Used for pretty logging
 autoload :Benchmark, 'benchmark'

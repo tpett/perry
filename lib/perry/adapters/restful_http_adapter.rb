@@ -13,6 +13,14 @@ module Perry::Adapters
 
     attr_reader :last_response
 
+    def read(options)
+      get_http(options[:relation]).parsed.tap do |result|
+        unless result.is_a?(Array)
+          raise Perry::MalformedResponse, "Expected instance of Array got #{result.inspect}"
+        end
+      end
+    end
+
     def write(options)
       object = options[:object]
       params = build_params_from_attributes(object)
@@ -24,6 +32,10 @@ module Perry::Adapters
     end
 
     protected
+
+    def get_http(relation)
+      http_call(relation, :get, relation.to_hash.merge(relation.modifiers_value[:query] || {}))
+    end
 
     def post_http(object, params)
       http_call(object, :post, params)
@@ -39,19 +51,19 @@ module Perry::Adapters
 
     def http_call(object, method, params={})
       request_klass = case method
+      when :get     then Net::HTTP::Get
       when :post    then Net::HTTP::Post
       when :put     then Net::HTTP::Put
       when :delete  then Net::HTTP::Delete
       end
 
-      req_uri = self.build_uri(object, method)
+      req_uri = self.build_uri(object, method, params || {})
 
-      request = if method == :delete
+      if [:get, :delete].include?(method)
         request = request_klass.new([req_uri.path, req_uri.query].join('?'))
       else
         request = request_klass.new(req_uri.path)
-        request.set_form_data(params) unless method == :delete
-        request
+        request.set_form_data(params)
       end
 
       self.log(params, "#{method.to_s.upcase} #{req_uri}") do
@@ -97,18 +109,20 @@ module Perry::Adapters
       end
     end
 
-    def build_uri(object, method)
+    def build_uri(object, method, params={})
       url = [self.config[:host].gsub(%r{/$}, ''), self.config[:service]]
-      unless object.new_record?
+      if object.is_a?(Perry::Base) && !object.new_record?
         primary_key = self.config[:primary_key] || object.primary_key
         pk_value = object.send(primary_key) or raise KeyError
         url << pk_value
       end
+
       uri = URI.parse "#{url.join('/')}#{self.config[:format]}"
 
-      # TRP: method DELETE has no POST body so we have to append any default options onto the query string
-      if method == :delete
-        uri.query = (self.config[:default_options] || {}).collect { |key, value| "#{key}=#{value}" }.join('&')
+      # TRP: method GET and DELETE have no POST body so we have to append any default options onto
+      # the query string
+      if [:get, :delete].include?(method)
+        uri.query = (self.config[:default_options] || {}).merge(params).to_query
       end
 
       uri

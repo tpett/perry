@@ -24,6 +24,50 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
       FakeWeb.clean_registry
     end
 
+    context "read method" do
+      setup do
+        @uri = "http://test.local/foo.json"
+        @model.class_eval do
+          read_with :none
+          read_with :restful_http
+          configure_read do |config|
+            config.host = 'http://test.local'
+            config.service = 'foo'
+            config.format = '.json'
+          end
+        end
+        FakeWeb.register_uri(:get, /#{@uri}.*/, :body => [{:id => 1}].to_json)
+      end
+
+      should "run a GET request on the service" do
+        @model.read_adapter.read(:relation => @model.scoped)
+        assert_equal Net::HTTP::Get, FakeWeb.last_request.class
+      end
+
+      should "include relation hash query in params" do
+        @model.read_adapter.read(:relation => @model.scoped.where(:id => 1))
+        assert_equal("where[][id]=1", URI.unescape(URI.parse(FakeWeb.last_request.path).query))
+      end
+
+      should "include value of :query modifier if present" do
+        @model.read_adapter.read(:relation => @model.modifiers(:query => { :foo => [:bar, :baz] }))
+        assert_equal("foo[]=bar&foo[]=baz",
+                     URI.unescape(URI.parse(FakeWeb.last_request.path).query))
+      end
+
+      should "parse response and return" do
+        result = @model.read_adapter.read(:relation => @model.scoped)
+        assert_equal [ { 'id' => 1 } ], result
+      end
+
+      should "raise a MalformedResponse error if parsed response not an array" do
+        FakeWeb.register_uri(:get, @uri, :body => {:id => 1}.to_json)
+        assert_raises(Perry::MalformedResponse) do
+          @model.read_adapter.read(:relation => @model.scoped)
+        end
+      end
+    end
+
     [:post, :put, :delete].each do |http_method|
       new_record = http_method == :put
       test_method = http_method == :delete ? :delete : :write

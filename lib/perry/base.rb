@@ -17,7 +17,7 @@ class Perry::Base
 
   DEFAULT_PRIMARY_KEY = :id
 
-  attr_accessor :attributes, :new_record, :saved, :read_options, :write_options
+  attr_accessor :attributes, :new_record, :saved, :write_options
   alias :new_record? :new_record
   alias :saved? :saved
   alias :persisted? :saved?
