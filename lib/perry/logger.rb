@@ -15,8 +15,7 @@ module Perry
         end
       rescue Exception => err
         log_info(params, name, 0)
-        Perry.logger.error("#{err.message} \n\n#{err.backtrace.join('\n')}")
-        []
+        raise
       end
 
       private
