@@ -43,7 +43,11 @@ class Perry::Middlewares::ModelBridge
         model.send("#{model.primary_key}=", key)
       end
       model.new_record = false
-      model.reload unless model.read_adapter.nil?
+      if model.read_adapter
+        # Clear out cache for this model
+        model.class.modifiers(:reset_cache => true, :noop => true).first
+        model.reload
+      end
     else
       add_errors_to_model(response, model, 'not saved')
     end
@@ -51,6 +55,7 @@ class Perry::Middlewares::ModelBridge
 
   def update_model_after_delete(response, model)
     if response.success
+      model.class.scoped.modifiers(:reset_cache => true, :noop => true).first
       model.freeze!
     else
       add_errors_to_model(response, model, 'not deleted')

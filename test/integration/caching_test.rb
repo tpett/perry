@@ -100,5 +100,54 @@ class Perry::CachingTest < Test::Unit::TestCase
       assert_equal 1, @adapter.calls.size
     end
   end
+
+  context "model with caching and a write adapter" do
+    setup do
+      @model = Class.new(Perry::Test::Base)
+      @model.class_eval do
+        include Perry::Middlewares::CacheRecords::Scopes
+
+        attributes :id
+        configure_read do |config|
+          config.add_middleware Perry::Middlewares::CacheRecords
+        end
+        write_with :test
+      end
+      @adapter = @model.read_adapter
+      @adapter.data = { :id => 2 }
+      @adapter.count = 1
+    end
+
+    teardown do
+      @adapter.reset
+    end
+
+    should "clear all cache entries for the model on a successful save" do
+      @model.all
+      @model.all
+      # The second .all should be cached
+      assert_equal 1, @adapter.calls.size
+      @model.new_from_data_store(:id => 1).save
+      # One call to save and another to reload the model
+      assert_equal 3, @adapter.calls.size
+      # This should no longer be cached
+      @model.all
+      assert_equal 4, @adapter.calls.size
+    end
+
+    should "clear all cache entries for the model on a successful delete" do
+      @model.all
+      @model.all
+      # The second .all should be cached
+      assert_equal 1, @adapter.calls.size
+      @model.new_from_data_store(:id => 1).delete
+      # One to delete the record
+      assert_equal 2, @adapter.calls.size
+      # This shouldn't be cached
+      @model.all
+      assert_equal 3, @adapter.calls.size
+    end
+
+  end
 end
 
