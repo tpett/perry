@@ -5,7 +5,7 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
   context "cache records middleware" do
     setup do
       @klass = Class.new(Perry::Test::Base)
-      @relation = @klass.send(:relation)
+      @relation = @klass.send(:scoped)
       @options = { :relation => @relation }
       @adapter = Perry::Test::MiddlewareAdapter.new(:read, {})
       @adapter.reset
@@ -14,6 +14,10 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
       @config = { :record_count_threshold => 5 }
       @middleware = Perry::Middlewares::CacheRecords.new(@adapter, @config)
       @middleware.reset_cache_store
+    end
+
+    teardown do
+      @adapter.reset
     end
 
     context "configuration" do
@@ -40,15 +44,17 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
       assert_equal 2, @adapter.calls.size
     end
 
-    # TODO: we currently don't have a way to do this now that caching is handled in a middleware
-    should_eventually "set fresh to false if data is from cache and to true if data is not from cache" do
-      assert @model.first.fresh
-      assert !@model.first.fresh
-    end
-
     should "rerun query if fresh modifier is used" do
       options = { :relation => @relation.modifiers(:fresh => true) }
       assert_equal @middleware.call(options), @middleware.call(options)
+      assert_equal 2, @adapter.calls.size
+    end
+
+    should "not cache with noop request" do
+      @middleware.call(@options.merge(:noop => true))
+      @middleware.call(@options)
+      # This will be 2 rather than 1 because it isn't routing through the execute method which would
+      # intercept the request on the :noop => true call
       assert_equal 2, @adapter.calls.size
     end
 
@@ -66,7 +72,7 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
         assert @middleware.cache_store.kind_of?(Perry::Middlewares::CacheRecords::Store)
       end
 
-      should "be resetabble" do
+      should "be resettable" do
         @middleware.call(@options)
         @middleware.call(:relation => @relation.modifiers(:reset_cache => true))
         assert_equal 2, @adapter.calls.size

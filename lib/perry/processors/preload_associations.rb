@@ -25,7 +25,7 @@ class Perry::Processors::PreloadAssociations
   def call(options)
     results = @adapter.call(options)
 
-    unless results.empty?
+    if results && !results.empty?
       relation = options[:relation]
       (includes = relation.to_hash[:includes] || {}).keys.each do |association_id|
         association = relation.klass.defined_associations[association_id.to_sym]

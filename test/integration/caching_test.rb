@@ -92,6 +92,13 @@ class Perry::CachingTest < Test::Unit::TestCase
       @model.all
       assert_equal 3, @adapter.calls.size
     end
+
+    should "not cache with noop request" do
+      @model.modifiers(:noop => true).first
+      assert_equal 0, @adapter.calls.size
+      @model.first
+      assert_equal 1, @adapter.calls.size
+    end
   end
 end
 

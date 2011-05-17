@@ -120,7 +120,7 @@ class Perry::Base
     protected
 
     def fetch_records(relation)
-      self.read_adapter.call(:read, :relation => relation).compact
+      self.read_adapter.call(:read, :relation => relation)
     end
 
     def read_with(adapter_type)

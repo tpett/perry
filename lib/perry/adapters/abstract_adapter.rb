@@ -134,11 +134,14 @@ class Perry::Adapters::AbstractAdapter
 
   # runs the adapter in the specified type mode -- designed to work with the middleware stack
   def call(mode, options)
-    @stack ||= self.stack_items.inject(self.method(mode)) do |below, (above_klass, above_config)|
+    @stack ||= self.stack_items.inject(self.method(:execute)) do |below, (above_klass, above_config)|
       above_klass.new(below, above_config)
     end
 
     options[:mode] = mode.to_sym
+    if options[:relation] && options[:relation].modifiers_value[:noop]
+      options[:noop] = options[:relation].modifiers_value[:noop]
+    end
     @stack.call(options)
   end
 
@@ -152,6 +155,13 @@ class Perry::Adapters::AbstractAdapter
     self.config[:processors] || []
   end
 
+  # Proxy method for the stack and the actual adapter action.  This method passes the call on to the
+  # appropriate method based on options[:mode] unless the query has a :noop modifier in which case
+  # it returns nil.
+  def execute(options)
+    self.send(options[:mode], options) unless options[:noop]
+  end
+
   # Abstract read method -- overridden by subclasses
   def read(options)
     raise(NotImplementedError,
@@ -160,14 +170,14 @@ class Perry::Adapters::AbstractAdapter
   end
 
   # Abstract write method -- overridden by subclasses
-  def write(object)
+  def write(options)
     raise(NotImplementedError,
           "You must not use the abstract adapter.  Implement an adapter that extends the " +
           "Perry::Adapters::AbstractAdapter class and overrides this method.")
   end
 
   # Abstract delete method -- overridden by subclasses
-  def delete(object)
+  def delete(options)
     raise(NotImplementedError,
           "You must not use the abstract adapter.  Implement an adapter that extends the " +
           "Perry::Adapters::AbstractAdapter class and overrides this method.")

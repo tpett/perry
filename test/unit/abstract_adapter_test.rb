@@ -73,8 +73,10 @@ class Perry::AbstractAdapterTest < Test::Unit::TestCase
 
       should "set the mode option before calling the stack" do
         class ModeAdapter < Class.new(@abstract)
-          def read(options)
-            [{ :mode => options[:mode] }]
+          [:read, :write, :delete].each do |mode|
+            define_method(mode) do |options|
+              [{ :mode => options[:mode] }]
+            end
           end
           def stack_items
             []
@@ -85,6 +87,22 @@ class Perry::AbstractAdapterTest < Test::Unit::TestCase
         [:read, :write, :delete].each do |mode|
           assert_equal mode, adapter.call(mode, {}).first[:mode]
         end
+      end
+
+      should "create base option :noop if set as a true modifier" do
+        Perry::Test::FakeAdapterStackItem.reset
+        cls = Class.new(Perry::Test::Base)
+        class Foo < @abstract
+          register_as :foo
+
+          def read(options)
+            Perry::Test::FakeAdapterStackItem.log << ["read", options]
+            [ { :id => 1 } ]
+          end
+        end
+        adapter = Foo.new(:foo, {})
+        assert_equal nil, adapter.call(:read, :relation => cls.scoped.modifiers(:noop => true))
+        assert Perry::Test::FakeAdapterStackItem.log.empty?
       end
 
       should "call stack items in order: processors, model bridge, middlewares" do
@@ -136,6 +154,41 @@ class Perry::AbstractAdapterTest < Test::Unit::TestCase
         adapter.call('read', { :relation => relation })
 
         assert_equal(correct + correct, Perry::Test::FakeAdapterStackItem.log)
+      end
+
+    end
+
+    context "execute method" do
+      setup do
+        class Test < @abstract
+          attr_reader :last_called
+          register_as :execute_method_test
+          def read(options)
+            @last_called = :read
+          end
+          def write(options)
+            @last_called = :write
+          end
+          def delete(options)
+            @last_called = :delete
+          end
+        end
+        @test = @abstract.create(:execute_method_test, {})
+      end
+
+      should "pass all options on to options[:mode] method" do
+        [:read, :write, :delete].each do |mode|
+          @test.execute(:option => :foo, :mode => mode)
+          assert_equal mode, @test.last_called
+        end
+      end
+
+      should "not call options[:mode] method if options[:noop] true" do
+        [:read, :write, :delete].each do |mode|
+          val = @test.execute(:noop => true, :mode => mode)
+          assert_equal nil, @test.last_called
+          assert_equal nil, val
+        end
       end
 
     end

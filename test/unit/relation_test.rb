@@ -67,6 +67,11 @@ class Perry::RelationTest < Test::Unit::TestCase
         assert_equal @records, @relation.to_a
       end
 
+      should "use empty array if result is nil" do
+        @relation.records = nil
+        assert_equal [], @relation.to_a
+      end
+
       should "return the value of records through the reader" do
         assert_equal @records, @relation.records
       end

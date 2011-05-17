@@ -77,7 +77,7 @@ class Perry::Relation
   end
 
   def to_a
-    @records ||= fetch_records
+    @records ||= fetch_records || []
   end
 
   def eager_load?

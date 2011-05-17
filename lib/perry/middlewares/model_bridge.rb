@@ -25,7 +25,7 @@ class Perry::Middlewares::ModelBridge
   protected
 
   def build_models_from_records(records, options)
-    if options[:relation]
+    if options[:relation] && records
       records.collect do |attributes|
         options[:relation].klass.new_from_data_store(attributes)
       end
@@ -37,7 +37,7 @@ class Perry::Middlewares::ModelBridge
   def update_model_after_save(response, model)
     model.saved = response.success
     if model.saved
-      if model.new_record? && !model.read_adapter.nil?
+      if model.new_record? && model.read_adapter
         key = response.model_attributes[model.primary_key]
         raise Perry::PerryError.new('primary key not included in response') if key.nil?
         model.send("#{model.primary_key}=", key)
