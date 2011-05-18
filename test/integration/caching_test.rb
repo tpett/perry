@@ -109,7 +109,7 @@ class Perry::CachingTest < Test::Unit::TestCase
 
         attributes :id
         configure_read do |config|
-          config.add_middleware Perry::Middlewares::CacheRecords
+          config.add_middleware Perry::Middlewares::CacheRecords, :record_count_threshold => 5
         end
         write_with :test
       end

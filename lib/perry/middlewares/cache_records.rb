@@ -62,7 +62,8 @@ class Perry::Middlewares::CacheRecords
   end
 
   def should_store_in_cache?(fresh_values, options)
+    fresh_values &&
     (!self.record_count_threshold || fresh_values.size <= self.record_count_threshold) &&
-      !options[:noop]
+    !options[:noop]
   end
 end
