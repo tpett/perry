@@ -26,6 +26,10 @@ class Perry::Relation
     MULTI_VALUE_METHODS.each {|v| instance_variable_set(:"@#{v}_values", [])}
   end
 
+  def initialize_copy(other)
+    reset_queries
+  end
+
   def merge(r)
     merged_relation = clone
     return merged_relation unless r

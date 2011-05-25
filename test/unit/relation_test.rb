@@ -77,7 +77,7 @@ class Perry::RelationTest < Test::Unit::TestCase
       end
 
       should "not run a query when records is set" do
-        assert_equal @records, @relation.all
+        assert_equal @records, @relation.to_a
         assert !@adapter.last_call
       end
 
@@ -270,6 +270,15 @@ class Perry::RelationTest < Test::Unit::TestCase
 
       should "raise Perry::RecordNotFound when a set of ids is passed and any record could not be found" do
         assert_raises(Perry::RecordNotFound) { @relation.find([1,2,3]) }
+      end
+    end
+
+    context "clone functionality" do
+      should "reset query" do
+        @adapter.data = { :id => 1 }
+        @relation.to_a
+        new_rel = @relation.clone
+        assert_nil new_rel.records
       end
     end
 
