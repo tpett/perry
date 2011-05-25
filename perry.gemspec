@@ -2,14 +2,14 @@
 
 Gem::Specification.new do |s|
   s.name = %q{perry}
-  s.version = "0.5.5"
+  s.version = "0.6.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Travis Petticrew"]
-  s.date = %q{2011-05-18}
+  s.date = %q{2011-05-25}
   s.email = %q{bobo@petticrew.net}
   s.extra_rdoc_files = ["README.rdoc"]
-  s.files = ["README.rdoc", "Rakefile", "lib/perry", "lib/perry/adapters", "lib/perry/adapters/abstract_adapter.rb", "lib/perry/adapters/bertrpc_adapter.rb", "lib/perry/adapters/restful_http_adapter.rb", "lib/perry/adapters.rb", "lib/perry/association.rb", "lib/perry/associations", "lib/perry/associations/common.rb", "lib/perry/associations/contains.rb", "lib/perry/associations/external.rb", "lib/perry/base.rb", "lib/perry/core_ext", "lib/perry/core_ext/kernel", "lib/perry/core_ext/kernel/singleton_class.rb", "lib/perry/errors.rb", "lib/perry/logger.rb", "lib/perry/middlewares", "lib/perry/middlewares/cache_records", "lib/perry/middlewares/cache_records/entry.rb", "lib/perry/middlewares/cache_records/scopes.rb", "lib/perry/middlewares/cache_records/store.rb", "lib/perry/middlewares/cache_records.rb", "lib/perry/middlewares/model_bridge.rb", "lib/perry/middlewares.rb", "lib/perry/persistence", "lib/perry/persistence/response.rb", "lib/perry/persistence.rb", "lib/perry/processors", "lib/perry/processors/preload_associations.rb", "lib/perry/processors.rb", "lib/perry/relation", "lib/perry/relation/finder_methods.rb", "lib/perry/relation/modifiers.rb", "lib/perry/relation/query_methods.rb", "lib/perry/relation.rb", "lib/perry/scopes", "lib/perry/scopes/conditions.rb", "lib/perry/scopes.rb", "lib/perry/serialization.rb", "lib/perry/version.rb", "lib/perry.rb"]
+  s.files = ["README.rdoc", "Rakefile", "lib/perry", "lib/perry/adapters", "lib/perry/adapters/abstract_adapter.rb", "lib/perry/adapters/bertrpc_adapter.rb", "lib/perry/adapters/restful_http_adapter.rb", "lib/perry/adapters.rb", "lib/perry/association.rb", "lib/perry/associations", "lib/perry/associations/common.rb", "lib/perry/associations/contains.rb", "lib/perry/associations/external.rb", "lib/perry/base.rb", "lib/perry/caching.rb", "lib/perry/core_ext", "lib/perry/core_ext/kernel", "lib/perry/core_ext/kernel/singleton_class.rb", "lib/perry/errors.rb", "lib/perry/logger.rb", "lib/perry/middlewares", "lib/perry/middlewares/cache_records", "lib/perry/middlewares/cache_records/entry.rb", "lib/perry/middlewares/cache_records/scopes.rb", "lib/perry/middlewares/cache_records/store.rb", "lib/perry/middlewares/cache_records.rb", "lib/perry/middlewares/model_bridge.rb", "lib/perry/middlewares.rb", "lib/perry/persistence", "lib/perry/persistence/response.rb", "lib/perry/persistence.rb", "lib/perry/processors", "lib/perry/processors/preload_associations.rb", "lib/perry/processors.rb", "lib/perry/relation", "lib/perry/relation/finder_methods.rb", "lib/perry/relation/modifiers.rb", "lib/perry/relation/query_methods.rb", "lib/perry/relation.rb", "lib/perry/scopes", "lib/perry/scopes/conditions.rb", "lib/perry/scopes.rb", "lib/perry/serialization.rb", "lib/perry/version.rb", "lib/perry.rb"]
   s.homepage = %q{http://github.com/tpett/perry}
   s.rdoc_options = ["--main", "README.rdoc"]
   s.require_paths = ["lib"]
