@@ -1,6 +1,6 @@
 require "#{File.dirname(__FILE__)}/../test_helper"
 
-class Perry::CachingTest < Test::Unit::TestCase
+class Perry::CachingIntegrationTest < Test::Unit::TestCase
 
   context "model with caching middleware with count threshold" do
     setup do
@@ -51,6 +51,31 @@ class Perry::CachingTest < Test::Unit::TestCase
       @model.all(:modifiers => { :fresh => true })
       assert_equal 3, @adapter.calls.size
     end
+
+    should "only cache if Perry::Caching.enabled?" do
+      begin
+        Perry::Caching.disable
+
+        @model.all
+        @model.all
+        assert_equal 2, @adapter.calls.size
+
+        Perry::Caching.use do
+          @model.all
+          @model.all
+          assert_equal 3, @adapter.calls.size
+        end # cache gets cleared
+
+        Perry::Caching.enable
+
+        @model.all
+        @model.all
+        assert_equal 4, @adapter.calls.size
+      ensure
+        Perry::Caching.enable
+      end
+    end
+
   end
 
   context "model with caching middleware with default config" do

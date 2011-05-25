@@ -27,6 +27,11 @@ require 'ostruct'
 require 'perry/core_ext/kernel/singleton_class'
 
 module Perry
+
+  autoload :Middlewares, 'perry/middlewares'
+  autoload :Processors, 'perry/processors'
+  autoload :Caching, 'perry/caching'
+
   @@log_file = nil
 
   def self.logger

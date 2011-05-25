@@ -23,6 +23,9 @@ require 'test/fixtures/models'
 # Pull in factories
 require 'test/factories'
 
+# Test suite written to have caching enabled
+Perry::Caching.enable
+
 def mock_http_response(name_without_ext)
   File.open(File.join('test/fixtures', "#{name_without_ext}.txt")) { |io| io.read }
 end

@@ -12,12 +12,20 @@ class Perry::Middlewares::CacheRecords
   # TRP: Default to a 5 minute cache
   DEFAULT_LONGEVITY = 5*60
 
+  def self.global_cache
+    @@global_cache ||= {}
+  end
+
+  def self.reset_global_cache
+    @@global_cache = {}
+  end
+
   def reset_cache_store(default_longevity=DEFAULT_LONGEVITY)
-    @cache_store = Perry::Middlewares::CacheRecords::Store.new(default_longevity)
+    self.class.global_cache[self] = Perry::Middlewares::CacheRecords::Store.new(default_longevity)
   end
 
   def cache_store
-    @cache_store || reset_cache_store
+    self.class.global_cache[self] || reset_cache_store
   end
 
   def initialize(adapter, config={})
@@ -26,7 +34,7 @@ class Perry::Middlewares::CacheRecords
   end
 
   def call(options)
-    if options[:relation]
+    if options[:relation] && Perry::Caching.enabled?
       call_with_cache(options)
     else
       @adapter.call(options)
@@ -67,3 +75,7 @@ class Perry::Middlewares::CacheRecords
     !options[:noop]
   end
 end
+
+# Register the cache clearing method with the Caching class
+Perry::Caching.register(Perry::Middlewares::CacheRecords.method(:reset_global_cache))
+

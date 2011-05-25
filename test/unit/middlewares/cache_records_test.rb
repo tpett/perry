@@ -18,6 +18,7 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
 
     teardown do
       @adapter.reset
+      Perry::Caching.enable
     end
 
     context "configuration" do
@@ -56,6 +57,48 @@ class Perry::Middlewares::CacheRecordsTest < Test::Unit::TestCase
       # This will be 2 rather than 1 because it isn't routing through the execute method which would
       # intercept the request on the :noop => true call
       assert_equal 2, @adapter.calls.size
+    end
+
+    should "only cache if Perry::Caching.enabled? is true" do
+      Perry::Caching.disable
+      @middleware.call(@options)
+      @middleware.call(@options)
+      assert_equal 2, @adapter.calls.size
+    end
+
+    should "only read from cache if Perry::Caching.enabled?" do
+      @middleware.call(@options)
+      Perry::Caching.disable
+      @middleware.call(@options)
+      assert_equal 2, @adapter.calls.size
+    end
+
+    context "global cache store" do
+      should "exist" do
+        assert @middleware.class.respond_to?(:global_cache)
+        assert @middleware.class.global_cache.kind_of?(Hash)
+      end
+
+      should "be resettable" do
+        before_cache = @middleware.class.global_cache
+        assert @middleware.class.respond_to?(:reset_global_cache)
+        @middleware.class.reset_global_cache
+        assert_not_equal before_cache.object_id, @middleware.class.global_cache.object_id
+      end
+
+      should "store local caches" do
+        @middleware.class.reset_global_cache
+        val = @middleware.call(@options)
+        # Verify that the call got put in the store used globally
+        assert_equal val, @middleware.class.global_cache.values.last.store.values.last.value
+      end
+
+      should "be used as the store for all requests" do
+        @middleware.call(@options)
+        @middleware.class.reset_global_cache
+        @middleware.call(@options)
+        assert_equal 2, @adapter.calls.size
+      end
     end
 
     context "cache store" do

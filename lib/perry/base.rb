@@ -6,8 +6,6 @@ require 'perry/serialization'
 require 'perry/relation'
 require 'perry/scopes'
 require 'perry/adapters'
-require 'perry/middlewares'
-require 'perry/processors'
 
 class Perry::Base
   include Perry::Associations::Contains
