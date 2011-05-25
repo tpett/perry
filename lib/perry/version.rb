@@ -3,7 +3,7 @@ module Perry
 
     MAJOR = 0
     MINOR = 6
-    TINY  = 0
+    TINY  = 1
 
     def self.to_s # :nodoc:
       [MAJOR, MINOR, TINY].join('.')

@@ -2,7 +2,7 @@
 
 Gem::Specification.new do |s|
   s.name = %q{perry}
-  s.version = "0.6.0"
+  s.version = "0.6.1"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Travis Petticrew"]
@@ -13,7 +13,7 @@ Gem::Specification.new do |s|
   s.homepage = %q{http://github.com/tpett/perry}
   s.rdoc_options = ["--main", "README.rdoc"]
   s.require_paths = ["lib"]
-  s.rubygems_version = %q{1.6.2}
+  s.rubygems_version = %q{1.7.2}
   s.summary = %q{Ruby library for querying and mapping data through generic interfaces}
 
   if s.respond_to? :specification_version then
