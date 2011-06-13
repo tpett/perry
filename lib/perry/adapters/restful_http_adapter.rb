@@ -14,11 +14,11 @@ module Perry::Adapters
     attr_reader :last_response
 
     def read(options)
-      get_http(options[:relation]).parsed.tap do |result|
-        unless result.is_a?(Array)
-          raise Perry::MalformedResponse, "Expected instance of Array got #{result.inspect}"
-        end
+      response = get_http(options[:relation])
+      unless response.parsed.is_a?(Array)
+        raise Perry::MalformedResponse, "Expected instance of Array got '#{response.raw.inspect}'"
       end
+      response.array_attributes
     end
 
     def write(options)

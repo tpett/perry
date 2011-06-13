@@ -49,11 +49,15 @@ module Perry::Persistence
 
     def model_attributes
       # return the inner hash if nested
-      if parsed_hash.keys.size == 1 && parsed_hash[parsed_hash.keys.first].is_a?(Hash)
-        parsed_hash[parsed_hash.keys.first]
+      extract_attributes(parsed_hash)
+    end
+
+    def array_attributes
+      if parsed.is_a?(Array)
+        parsed.collect { |item| item.is_a?(Hash) ? extract_attributes(item) : item }
       else
-        parsed_hash
-      end.symbolize_keys
+        []
+      end
     end
 
     def errors
@@ -61,6 +65,14 @@ module Perry::Persistence
     end
 
     protected
+
+    def extract_attributes(hash)
+      if hash.keys.size == 1 && hash[hash.keys.first].is_a?(Hash)
+        hash[hash.keys.first]
+      else
+        hash
+      end.symbolize_keys
+    end
 
     def parsed_hash
       if parsed.is_a?(Hash)

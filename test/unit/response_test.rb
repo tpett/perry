@@ -85,13 +85,40 @@ class Perry::Persistence::ResponseTest < Test::Unit::TestCase
           @response.parsed = input
           assert_equal output, @response.model_attributes
         end
-        @response.parsed = { :foo => 'bar', :bar => 'foo' }
-
       end
 
       should "return empty hash if not present" do
         assert_equal({}, @response.model_attributes)
       end
+
+    end
+
+    context "array_attributes method" do
+
+      should "be an instance method" do
+        assert @response.respond_to?(:array_attributes)
+      end
+
+      should "return the model attributes if response is an Array (removing nesting)" do
+        {
+          [
+            { :model => { :id => 1 } },
+            { :model => { :id => 2 } }
+          ] =>
+          [
+            { :id => 1 },
+            { :id => 2 }
+          ]
+        }.each do |input, output|
+          @response.parsed = input
+          assert_equal output, @response.array_attributes
+        end
+      end
+
+      should "return an empty array if not present" do
+        assert_equal([], @response.array_attributes)
+      end
+
     end
 
     context "errors method" do

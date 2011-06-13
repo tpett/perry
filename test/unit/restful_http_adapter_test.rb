@@ -36,7 +36,7 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
             config.format = '.json'
           end
         end
-        FakeWeb.register_uri(:get, /#{@uri}.*/, :body => [{:id => 1}].to_json)
+        FakeWeb.register_uri(:get, /#{@uri}.*/, :body => [{ :model => {:id => 1} }].to_json)
       end
 
       should "run a GET request on the service" do
@@ -57,7 +57,7 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
 
       should "parse response and return" do
         result = @model.read_adapter.read(:relation => @model.scoped)
-        assert_equal [ { 'id' => 1 } ], result
+        assert_equal [ { :id => 1 } ], result
       end
 
       should "raise a MalformedResponse error if parsed response not an array" do
