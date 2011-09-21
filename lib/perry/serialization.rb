@@ -37,7 +37,7 @@ module Perry::Serialization
 
   def self.included(receiver)
     receiver.class_eval do
-      class_inheritable_accessor :serialized_attributes
+      class_attribute :serialized_attributes
       self.serialized_attributes = []
     end
 

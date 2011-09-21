@@ -12,3 +12,4 @@ module Kernel
     singleton_class.class_eval(*args, &block)
   end
 end
+

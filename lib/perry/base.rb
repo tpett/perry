@@ -1,4 +1,5 @@
 # TRP: Perry modules
+require 'perry/support/class_attributes'
 require 'perry/errors'
 require 'perry/associations/contains'
 require 'perry/associations/external'
@@ -8,6 +9,7 @@ require 'perry/scopes'
 require 'perry/adapters'
 
 class Perry::Base
+  include Perry::Support::ClassAttributes
   include Perry::Associations::Contains
   include Perry::Associations::External
   include Perry::Serialization
@@ -20,11 +22,12 @@ class Perry::Base
   alias :saved? :saved
   alias :persisted? :saved?
 
-  class_inheritable_accessor :read_adapter, :write_adapter,
-    :defined_attributes, :scoped_methods, :defined_associations
+  class_attributes :read_adapter, :write_adapter
+  class_attributes :defined_attributes, :scoped_methods, :defined_associations, :scopes
 
   self.defined_associations = {}
   self.defined_attributes = []
+  self.scopes = {}
 
   def initialize(attributes={})
     self.new_record = true
@@ -127,7 +130,7 @@ class Perry::Base
 
     def write_with(adapter_type)
       if write_adapter
-        write_inheritable_attribute :write_adapter, nil if adapter_type != write_adapter.type
+        self.write_adapter = nil if adapter_type != write_adapter.type
       else
         # TRP: Pull in methods and libraries needed for mutable functionality
         require 'perry/persistence' unless defined?(Perry::Persistence)
@@ -194,7 +197,7 @@ class Perry::Base
     private
 
     def setup_adapter(mode, config)
-      current_adapter = read_inheritable_attribute :"#{mode}_adapter"
+      current_adapter = self.send(:"#{mode}_adapter")
       type = config[:type] if config.is_a?(Hash)
 
       new_adapter = if type == :none
@@ -205,7 +208,7 @@ class Perry::Base
         Perry::Adapters::AbstractAdapter.create(type, config)
       end
 
-      write_inheritable_attribute :"#{mode}_adapter", new_adapter
+      self.send(:"#{mode}_adapter=", new_adapter)
     end
 
     def configure_adapter(mode, &block)

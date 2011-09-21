@@ -1,6 +1,5 @@
 # TRP: Cherry pick some goodies from active_support
 require 'active_support/core_ext/array'
-require 'active_support/core_ext/class/inheritable_attributes'
 require 'active_support/core_ext/hash/deep_merge'
 require 'active_support/core_ext/hash/keys'
 require 'active_support/core_ext/hash/conversions'
