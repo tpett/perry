@@ -52,7 +52,7 @@ module Perry::Adapters
     protected
 
     def call_server(options)
-      service_options = (options || {}).dup.merge(config[:default_options])
+      service_options = (options || {}).merge(config[:default_options])
       request = self.service.call
       namespace = request.send(self.namespace)
       namespace.send(self.service_name, service_options)
