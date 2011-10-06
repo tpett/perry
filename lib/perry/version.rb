@@ -2,8 +2,8 @@ module Perry
   module Version
 
     MAJOR = 0
-    MINOR = 6
-    TINY  = 3
+    MINOR = 7
+    TINY  = 0
 
     def self.to_s # :nodoc:
       [MAJOR, MINOR, TINY].join('.')
