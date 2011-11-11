@@ -1,4 +1,6 @@
-autoload :Net, 'net/http'
+module Net
+  autoload :HTTP, 'net/http'
+end
 autoload :URI, 'uri'
 
 module Perry::Adapters
