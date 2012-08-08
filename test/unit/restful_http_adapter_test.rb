@@ -158,8 +158,6 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
 
         unless http_method == :delete
           should "not alter config[:default_options] when config[:post_body_wrapper] is set" do
-            FakeWeb.register_uri(http_method, @uri, :response => mock_http_response('json_response'))
-
             @model.class_eval do
               attributes :foo
               configure_write do |config|
@@ -167,6 +165,8 @@ class Perry::RestfulHttpAdapterTest < Test::Unit::TestCase
                 config.default_options = { :api_key => 'asdf' }
               end
             end
+
+            FakeWeb.register_uri(http_method, "#{@uri}?api_key=asdf", :response => mock_http_response('json_response'))
 
             @instance.foo = 'foo'
 

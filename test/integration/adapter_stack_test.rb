@@ -125,26 +125,26 @@ class Perry::AdapterStackTest < Test::Unit::TestCase
       assert_kind_of Net::HTTP::Delete, FakeWeb.last_request
     end
 
-    should "merge in default_options set at the class level" do
+    should "put default_options set at the class level in the query string" do
       @model.class_eval do
         configure_write do |config|
           config.default_options = { :password => "secret" }
         end
       end
-      FakeWeb.register_uri(:put, 'http://test.local/foo/1.json', :body => "OK")
+      FakeWeb.register_uri(:put, 'http://test.local/foo/1.json?password=secret', :body => "OK")
       instance = @model.new_from_data_store(:id => 1)
       assert instance.save
       assert FakeWeb.last_request
-      assert FakeWeb.last_request.body.match(/secret/)
+      assert FakeWeb.last_request.path.match(/\?password=secret/)
     end
 
-    should "merge in default_options set at the instance level" do
-      FakeWeb.register_uri(:put, 'http://test.local/foo/1.json', :body => "OK")
+    should "put default_options set at the instance level in the query string" do
+      FakeWeb.register_uri(:put, 'http://test.local/foo/1.json?api_key=myapikey', :body => "OK")
       instance = @model.new_from_data_store(:id => 1)
       instance.write_options = { :default_options => { :api_key => "myapikey" }}
       assert instance.save
       assert FakeWeb.last_request
-      assert FakeWeb.last_request.body.match(/myapikey/)
+      assert FakeWeb.last_request.path.match(/\?api_key=myapikey/)
     end
   end
 
