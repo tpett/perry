@@ -25,7 +25,7 @@ module Perry::Adapters
 
     def write(options)
       object = options[:object]
-      params = build_params_from_attributes(object)
+      params = build_write_params_from_attributes(object)
       object.new_record? ? post_http(object, params) : put_http(object, params)
     end
 
@@ -60,11 +60,8 @@ module Perry::Adapters
       end
 
       req_uri = self.build_uri(object, method, params || {})
-
-      if [:get, :delete].include?(method)
-        request = request_klass.new([req_uri.path, req_uri.query].join('?'))
-      else
-        request = request_klass.new(req_uri.path)
+      request = request_klass.new([req_uri.path, req_uri.query].join('?'))
+      if [:post, :put].include?(method)
         request.set_form_data(params)
       end
 
@@ -95,16 +92,12 @@ module Perry::Adapters
       end
     end
 
-    def build_params_from_attributes(object)
+    def build_write_params_from_attributes(object)
       if self.config[:post_body_wrapper]
-        defaults = self.config[:default_options]
-        params = defaults ? defaults.dup : {}
-        params.merge!(object.write_options[:default_options]) if object.write_options.is_a?(Hash) && object.write_options[:default_options].is_a?(Hash)
-
+        params = {}
         object.attributes.each do |attribute, value|
           params.merge!({"#{self.config[:post_body_wrapper]}[#{attribute}]" => value})
         end
-
         params
       else
         object.attributes
@@ -121,11 +114,18 @@ module Perry::Adapters
 
       uri = URI.parse "#{url.join('/')}#{self.config[:format]}"
 
-      # TRP: method GET and DELETE have no POST body so we have to append any default options onto
-      # the query string
-      if [:get, :delete].include?(method)
-        uri.query = (self.config[:default_options] || {}).merge(params).to_query
+      # append any config `:default_options` and any object `:default_options`
+      # onto the query string.  if GET or DELETE, also append the params
+      # since they don't use a post body
+      defaults = self.config[:default_options] || {}
+      if object.respond_to?(:write_options) && object.write_options.is_a?(Hash) && object.write_options[:default_options].is_a?(Hash)
+        defaults.merge!(object.write_options[:default_options])
       end
+      uri.query = if [:get, :delete].include?(method)
+        defaults.merge(params)
+      else
+        defaults
+      end.to_query
 
       uri
     end
