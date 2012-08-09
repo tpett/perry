@@ -1,20 +1,20 @@
 # -*- encoding: utf-8 -*-
 
 Gem::Specification.new do |s|
-  s.name = %q{perry}
-  s.version = "0.7.1"
+  s.name = "perry"
+  s.version = "0.8.0"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
-  s.authors = [%q{Travis Petticrew}]
-  s.date = %q{2011-11-11}
-  s.email = %q{bobo@petticrew.net}
-  s.extra_rdoc_files = [%q{README.rdoc}]
-  s.files = [%q{README.rdoc}, %q{Rakefile}, %q{lib/perry}, %q{lib/perry/adapters}, %q{lib/perry/adapters/abstract_adapter.rb}, %q{lib/perry/adapters/bertrpc_adapter.rb}, %q{lib/perry/adapters/restful_http_adapter.rb}, %q{lib/perry/adapters.rb}, %q{lib/perry/association.rb}, %q{lib/perry/associations}, %q{lib/perry/associations/common.rb}, %q{lib/perry/associations/contains.rb}, %q{lib/perry/associations/external.rb}, %q{lib/perry/base.rb}, %q{lib/perry/caching.rb}, %q{lib/perry/core_ext}, %q{lib/perry/core_ext/kernel}, %q{lib/perry/core_ext/kernel/singleton_class.rb}, %q{lib/perry/errors.rb}, %q{lib/perry/logger.rb}, %q{lib/perry/middlewares}, %q{lib/perry/middlewares/cache_records}, %q{lib/perry/middlewares/cache_records/entry.rb}, %q{lib/perry/middlewares/cache_records/scopes.rb}, %q{lib/perry/middlewares/cache_records/store.rb}, %q{lib/perry/middlewares/cache_records.rb}, %q{lib/perry/middlewares/model_bridge.rb}, %q{lib/perry/middlewares.rb}, %q{lib/perry/persistence}, %q{lib/perry/persistence/response.rb}, %q{lib/perry/persistence.rb}, %q{lib/perry/processors}, %q{lib/perry/processors/preload_associations.rb}, %q{lib/perry/processors.rb}, %q{lib/perry/relation}, %q{lib/perry/relation/finder_methods.rb}, %q{lib/perry/relation/modifiers.rb}, %q{lib/perry/relation/query_methods.rb}, %q{lib/perry/relation.rb}, %q{lib/perry/scopes}, %q{lib/perry/scopes/conditions.rb}, %q{lib/perry/scopes.rb}, %q{lib/perry/serialization.rb}, %q{lib/perry/support}, %q{lib/perry/support/class_attributes.rb}, %q{lib/perry/version.rb}, %q{lib/perry.rb}]
-  s.homepage = %q{http://github.com/tpett/perry}
-  s.rdoc_options = [%q{--main}, %q{README.rdoc}]
-  s.require_paths = [%q{lib}]
-  s.rubygems_version = %q{1.8.9}
-  s.summary = %q{Ruby library for querying and mapping data through generic interfaces}
+  s.authors = ["Travis Petticrew"]
+  s.date = "2012-08-09"
+  s.email = "bobo@petticrew.net"
+  s.extra_rdoc_files = ["README.rdoc"]
+  s.files = ["README.rdoc", "Rakefile", "lib/perry", "lib/perry/adapters", "lib/perry/adapters/abstract_adapter.rb", "lib/perry/adapters/bertrpc_adapter.rb", "lib/perry/adapters/restful_http_adapter.rb", "lib/perry/adapters.rb", "lib/perry/association.rb", "lib/perry/associations", "lib/perry/associations/common.rb", "lib/perry/associations/contains.rb", "lib/perry/associations/external.rb", "lib/perry/base.rb", "lib/perry/caching.rb", "lib/perry/core_ext", "lib/perry/core_ext/kernel", "lib/perry/core_ext/kernel/singleton_class.rb", "lib/perry/errors.rb", "lib/perry/logger.rb", "lib/perry/middlewares", "lib/perry/middlewares/cache_records", "lib/perry/middlewares/cache_records/entry.rb", "lib/perry/middlewares/cache_records/scopes.rb", "lib/perry/middlewares/cache_records/store.rb", "lib/perry/middlewares/cache_records.rb", "lib/perry/middlewares/model_bridge.rb", "lib/perry/middlewares.rb", "lib/perry/persistence", "lib/perry/persistence/response.rb", "lib/perry/persistence.rb", "lib/perry/processors", "lib/perry/processors/preload_associations.rb", "lib/perry/processors.rb", "lib/perry/relation", "lib/perry/relation/finder_methods.rb", "lib/perry/relation/modifiers.rb", "lib/perry/relation/query_methods.rb", "lib/perry/relation.rb", "lib/perry/scopes", "lib/perry/scopes/conditions.rb", "lib/perry/scopes.rb", "lib/perry/serialization.rb", "lib/perry/support", "lib/perry/support/class_attributes.rb", "lib/perry/version.rb", "lib/perry.rb"]
+  s.homepage = "http://github.com/tpett/perry"
+  s.rdoc_options = ["--main", "README.rdoc"]
+  s.require_paths = ["lib"]
+  s.rubygems_version = "1.8.15"
+  s.summary = "Ruby library for querying and mapping data through generic interfaces"
 
   if s.respond_to? :specification_version then
     s.specification_version = 3
